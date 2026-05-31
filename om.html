@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Om os — Camp Bæstet</title>
+  <style>
+    @import url('https://fonts.cdnfonts.com/css/cloister-black');
+  </style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:       #c9a84c;
+      --gold2:      #e8c96a;
+      --dark:       #0a0805;
+      --stone:      #1e1912;
+      --text:       #d4c4a0;
+      --muted:      #7a6a50;
+      --blackletter: 'Cloister Black', serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      height: 68px;
+      background: rgba(5,3,2,0.97);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-logo {
+      font-family: var(--blackletter);
+      font-size: 1.5rem;
+      color: var(--gold);
+      text-decoration: none;
+      text-shadow: 0 0 20px rgba(201,168,76,0.4);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.3rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--blackletter);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.95rem;
+      padding: 0.45rem 1.1rem;
+      transition: color 0.25s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 50%; right: 50%;
+      height: 1px;
+      background: var(--gold);
+      transition: all 0.25s;
+    }
+
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { left: 10%; right: 10%; }
+    .nav-links a.active { color: var(--gold); }
+    .nav-links a.active::after { left: 10%; right: 10%; }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-top: 68px;
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(201,168,76,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .page-header .label {
+      font-family: var(--blackletter);
+      font-size: 0.85rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 0.6rem;
+    }
+
+    .page-header h1 {
+      font-family: var(--blackletter);
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      color: #fff;
+      font-weight: 400;
+      line-height: 1.05;
+      text-shadow: 0 0 60px rgba(201,168,76,0.2);
+    }
+
+    .page-header .divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 1.5rem auto;
+    }
+
+    .page-header p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Portrait grid ── */
+    .portraits-section {
+      padding: 2rem 2rem 6rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .portraits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 2rem;
+    }
+
+    .portrait-card {
+      position: relative;
+      cursor: pointer;
+      group: true;
+    }
+
+    .portrait-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(160deg, #1e1510 0%, #2d1e0f 50%, #1a100a 100%);
+      border: 1px solid rgba(201,168,76,0.15);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.4s, box-shadow 0.4s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+    }
+
+    .portrait-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .portrait-img::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(10,8,5,0.85) 100%);
+      pointer-events: none;
+    }
+
+    .portrait-card:hover .portrait-img {
+      border-color: rgba(201,168,76,0.5);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 30px rgba(201,168,76,0.1);
+    }
+
+    /* Gold shimmer on hover */
+    .portrait-img::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.08) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.4s;
+      z-index: 1;
+    }
+
+    .portrait-card:hover .portrait-img::before { opacity: 1; }
+
+    .portrait-info {
+      padding: 0.9rem 0.2rem 0;
+    }
+
+    .portrait-name {
+      font-family: var(--blackletter);
+      font-size: 1.15rem;
+      color: #fff;
+      margin-bottom: 0.2rem;
+    }
+
+    .portrait-role {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    /* ── Reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid rgba(201,168,76,0.15);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-logo {
+      font-family: var(--blackletter);
+      font-size: 1.8rem;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    footer p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--gold); }
+
+    .footer-socials {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.2rem;
+    }
+
+    .footer-socials a {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: 1px solid rgba(201,168,76,0.15);
+      padding: 0.5rem 1rem;
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+
+    .footer-socials a:hover {
+      color: var(--gold);
+      border-color: rgba(201,168,76,0.5);
+      background: rgba(201,168,76,0.05);
+    }
+
+    .footer-socials svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 1.2rem; }
+
+      .nav-logo {
+        font-size: 1.1rem;
+        white-space: nowrap;
+      }
+
+      .nav-links a {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+      }
+
+      .portraits-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      .footer-socials {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo">Camp Bæstet</a>
+    <ul class="nav-links">
+      <li><a href="index.html#begivenheder">Begivenheder</a></li>
+      <li><a href="om.html" class="active">Om os</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-header">
+    <span class="label">Hærens ansigter</span>
+    <h1>Mød bæsterne</h1>
+    <div class="divider"></div>
+    <p>Vi er dem der bygger borgen, holder festen og vågner op i sølet dagen efter. Her er holdet.</p>
+  </div>
+
+  <div class="portraits-section">
+    <div class="portraits-grid">
+
+      <!-- 1. Victor -->
+      <div class="portrait-card reveal" style="transition-delay:0.0s">
+        <div class="portrait-img"><img src="./assets/images/Victor.jpg" alt="Victor" onerror="this.parentElement.innerHTML='👑'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Victor</div><div class="portrait-role">Kongen</div></div>
+      </div>
+
+      <!-- 2. Dan -->
+      <div class="portrait-card reveal" style="transition-delay:0.05s">
+        <div class="portrait-img"><img src="./assets/images/Dan.jpg" alt="Dan" /></div>
+        <div class="portrait-info"><div class="portrait-name">Dan</div><div class="portrait-role">Borgvogteren</div></div>
+      </div>
+
+      <!-- 3. Jonas -->
+      <div class="portrait-card reveal" style="transition-delay:0.1s">
+        <div class="portrait-img"><img src="./assets/images/Jonas.jpg" alt="Jonas" /></div>
+        <div class="portrait-info"><div class="portrait-name">Jonas</div><div class="portrait-role">Hofnarren</div></div>
+      </div>
+
+      <!-- 4. Michael -->
+      <div class="portrait-card reveal" style="transition-delay:0.15s">
+        <div class="portrait-img"><img src="./assets/images/Michael.png" alt="Michael" /></div>
+        <div class="portrait-info"><div class="portrait-name">Michael</div><div class="portrait-role">Brygmesteren</div></div>
+      </div>
+
+      <!-- 5. Mateo -->
+      <div class="portrait-card reveal" style="transition-delay:0.2s">
+        <div class="portrait-img"><img src="./assets/images/Mateo.jpg" alt="Mateo" onerror="this.parentElement.innerHTML='⚔️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Mateo</div><div class="portrait-role">Prinsessen</div></div>
+      </div>
+
+      <!-- 6. Kosmos -->
+      <div class="portrait-card reveal" style="transition-delay:0.25s">
+        <div class="portrait-img"><img src="./assets/images/Kosmos.jpg" alt="Kosmos" onerror="this.parentElement.innerHTML='📯'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Kosmos</div><div class="portrait-role">Ridderen af Borgen</div></div>
+      </div>
+
+      <!-- 7. Søren -->
+      <div class="portrait-card reveal" style="transition-delay:0.3s">
+        <div class="portrait-img"><img src="./assets/images/Søren.jpg" alt="Søren" onerror="this.parentElement.innerHTML='🪕'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Søren</div><div class="portrait-role">Herolden</div></div>
+      </div>
+
+      <!-- 8. Oliver -->
+      <div class="portrait-card reveal" style="transition-delay:0.35s">
+        <div class="portrait-img"><img src="./assets/images/Oliver.jpg" alt="Oliver" onerror="this.parentElement.innerHTML='🏹'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Oliver</div><div class="portrait-role">Skalden</div></div>
+      </div>
+
+      <!-- 9. Rande -->
+      <div class="portrait-card reveal" style="transition-delay:0.4s">
+        <div class="portrait-img"><img src="./assets/images/Rande.jpg" alt="Rande" onerror="this.parentElement.innerHTML='🌍'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Rande</div><div class="portrait-role">Landstrygeren</div></div>
+      </div>
+
+      <!-- 10. Kuhn -->
+      <div class="portrait-card reveal" style="transition-delay:0.45s">
+        <div class="portrait-img"><img src="./assets/images/Kuhn.jpg" alt="Kuhn" onerror="this.parentElement.innerHTML='⚖️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Kuhn</div><div class="portrait-role">Bødlen</div></div>
+      </div>
+
+      <!-- 11. Simon -->
+      <div class="portrait-card reveal" style="transition-delay:0.5s">
+        <div class="portrait-img"><img src="./assets/images/Simon.jpg" alt="Simon" onerror="this.parentElement.innerHTML='✝️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Simon</div><div class="portrait-role">Korsfareren</div></div>
+      </div>
+
+      <!-- 12. Morten -->
+      <div class="portrait-card reveal" style="transition-delay:0.55s">
+        <div class="portrait-img"><img src="./assets/images/Morten.jpg" alt="Morten" onerror="this.parentElement.innerHTML='🗝️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Morten</div><div class="portrait-role">Kammerherren</div></div>
+      </div>
+
+      <!-- 13. Owens -->
+      <div class="portrait-card reveal" style="transition-delay:0.6s">
+        <div class="portrait-img"><img src="./assets/images/Owens.jpg" alt="Owens" onerror="this.parentElement.innerHTML='🚩'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Owens</div><div class="portrait-role">Pilgrimen</div></div>
+      </div>
+
+      <!-- 14. Rikke -->
+      <div class="portrait-card reveal" style="transition-delay:0.65s">
+        <div class="portrait-img"><img src="./assets/images/Rikke.jpg" alt="Rikke" onerror="this.parentElement.innerHTML='🏰'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Rikke</div><div class="portrait-role">Borgfruen</div></div>
+      </div>
+
+      <!-- 15. Andrea -->
+      <div class="portrait-card reveal" style="transition-delay:0.7s">
+        <div class="portrait-img"><img src="./assets/images/Andrea.jpg" alt="Andrea" onerror="this.parentElement.innerHTML='👸'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Andrea</div><div class="portrait-role">Novicen</div></div>
+      </div>
+
+      <!-- 16. Page -->
+      <div class="portrait-card reveal" style="transition-delay:0.75s">
+        <div class="portrait-img"><img src="./assets/images/Page.jpg" alt="Page" onerror="this.parentElement.innerHTML='🛡️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Page</div><div class="portrait-role">Spåmanden</div></div>
+      </div>
+
+      <!-- 17. Sebastian -->
+      <div class="portrait-card reveal" style="transition-delay:0.8s">
+        <div class="portrait-img"><img src="./assets/images/Sebastian.jpg" alt="Sebastian" onerror="this.parentElement.innerHTML='🔨'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Sebastian</div><div class="portrait-role">Smeden</div></div>
+      </div>
+
+      <!-- 18. Marcus -->
+      <div class="portrait-card reveal" style="transition-delay:0.85s">
+        <div class="portrait-img"><img src="./assets/images/Marcus.jpg" alt="Marcus" onerror="this.parentElement.innerHTML='🧌'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Marcus</div><div class="portrait-role">Veksleren</div></div>
+      </div>
+
+      <!-- 19. Jeppe -->
+      <div class="portrait-card reveal" style="transition-delay:0.9s">
+        <div class="portrait-img"><img src="./assets/images/Jeppe.jpg" alt="Jeppe" onerror="this.parentElement.innerHTML='🔨'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Jeppe</div><div class="portrait-role">Bueskytten</div></div>
+      </div>
+
+      <!-- 20. Henrik -->
+      <div class="portrait-card reveal" style="transition-delay:0.95s">
+        <div class="portrait-img"><img src="./assets/images/Henrik.jpg" alt="Henrik" onerror="this.parentElement.innerHTML='📿'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Henrik</div><div class="portrait-role">Munken</div></div>
+      </div>
+
+      <!-- 21. Thomas -->
+      <div class="portrait-card reveal" style="transition-delay:1.0s">
+        <div class="portrait-img"><img src="./assets/images/Thomas.jpg" alt="Thomas" onerror="this.parentElement.innerHTML='✝️'" /></div>
+        <div class="portrait-info"><div class="portrait-name">Thomas</div><div class="portrait-role">Bannerføreren</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-logo">⚜ Camp Bæstet ⚜</div>
+    <p><a href="index.html">← Tilbage til forsiden</a> &nbsp;·&nbsp; Del af Dream City · Roskilde Festival</p>
+    <div class="footer-socials">
+      <a href="https://www.facebook.com/profile.php?id=100091878402241" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </a>
+      <a href="https://www.instagram.com/camp_baestet/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        Instagram
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.08 });
+    reveals.forEach(el => io.observe(el));
+  </script>
+</body>
+</html>
