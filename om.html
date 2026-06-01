@@ -479,7 +479,10 @@
     .cursor-dot, .cursor-ring {
       position: fixed; top: 0; left: 0; pointer-events: none; z-index: 10000;
       border-radius: 50%; transform: translate(-50%, -50%); will-change: transform;
+      display: none;
     }
+    .has-custom-cursor .cursor-dot,
+    .has-custom-cursor .cursor-ring { display: block; }
     .cursor-dot { width: 6px; height: 6px; background: var(--gold); box-shadow: 0 0 8px rgba(201,168,76,0.8); }
     .cursor-ring {
       width: 30px; height: 30px; border: 1px solid rgba(201,168,76,0.6);
@@ -529,6 +532,8 @@
         gap: 1rem;
       }
 
+      /* Drop tungt altid-kørende lag på mobil */
+      .grain { display: none; }
     }
   </style>
   <script type="application/ld+json">
@@ -776,9 +781,11 @@
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ── Site-wide ild/embers bag alt ──
+    const lowPower = window.matchMedia('(max-width: 700px)').matches;
     const embersBox = document.getElementById('embers');
     if (embersBox && !reduce) {
-      for (let i = 0; i < 70; i++) {
+      const emberCount = lowPower ? 26 : 70;
+      for (let i = 0; i < emberCount; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
         p.style.left = Math.random() * 100 + '%';
@@ -791,7 +798,7 @@
         p.style.setProperty('--sway', (Math.random() * 50 - 25) + 'px');
         const color = Math.random() > 0.5 ? '#c9a84c' : '#c8601a';
         p.style.background = color;
-        p.style.boxShadow = '0 0 6px ' + color;
+        if (!lowPower) p.style.boxShadow = '0 0 6px ' + color;
         embersBox.appendChild(p);
       }
     }

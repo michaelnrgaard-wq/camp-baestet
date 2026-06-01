@@ -916,6 +916,9 @@
       .countdown-number { font-size: 2rem; }
 
       .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+
+      /* Drop tunge altid-kørende lag på mobil (ydeevne/batteri) */
+      .grain, .hero-fog { display: none; }
     }
 
     /* ── Scroll reveal ── */
@@ -1227,7 +1230,10 @@
       border-radius: 50%;
       transform: translate(-50%, -50%);
       will-change: transform;
+      display: none;
     }
+    .has-custom-cursor .cursor-dot,
+    .has-custom-cursor .cursor-ring { display: block; }
     .cursor-dot {
       width: 6px; height: 6px;
       background: var(--gold);
@@ -1584,8 +1590,11 @@
     setInterval(updateCountdown, 1000);
 
     // ── Particles ──
+    // Færre partikler + ingen glød på små skærme (ydeevne/batteri)
+    const lowPower = window.matchMedia('(max-width: 700px)').matches;
     const container = document.getElementById('particles');
-    for (let i = 0; i < 80; i++) {
+    const heroCount = lowPower ? 34 : 80;
+    for (let i = 0; i < heroCount; i++) {
       const p = document.createElement('div');
       p.className = 'particle';
       p.style.left   = Math.random() * 100 + '%';
@@ -1601,7 +1610,7 @@
       const gold = Math.random() > 0.5;
       const color = gold ? '#c9a84c' : '#c8601a';
       p.style.background = color;
-      p.style.boxShadow = '0 0 6px ' + color;
+      if (!lowPower) p.style.boxShadow = '0 0 6px ' + color;
       container.appendChild(p);
     }
 
@@ -1695,7 +1704,8 @@
     // ── Site-wide ild/embers bag alt ──
     const embersBox = document.getElementById('embers');
     if (embersBox && !reduce) {
-      for (let i = 0; i < 70; i++) {
+      const emberCount = lowPower ? 26 : 70;
+      for (let i = 0; i < emberCount; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
         p.style.left = Math.random() * 100 + '%';
@@ -1709,7 +1719,7 @@
         const gold = Math.random() > 0.5;
         const color = gold ? '#c9a84c' : '#c8601a';
         p.style.background = color;
-        p.style.boxShadow = '0 0 6px ' + color;
+        if (!lowPower) p.style.boxShadow = '0 0 6px ' + color;
         embersBox.appendChild(p);
       }
     }
