@@ -12,6 +12,7 @@
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Camp Bæstet — Dream City, Roskilde" />
   <link rel="canonical" href="https://www.bæstet.dk/" />
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Cloister Black via cdnfonts -->
@@ -658,6 +659,203 @@
       fill: currentColor;
     }
 
+    /* ── Hamburger ── */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 0.3rem;
+      background: none;
+      border: none;
+      z-index: 200;
+    }
+
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 1px;
+      background: var(--gold);
+      transition: all 0.3s;
+    }
+
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .nav-mobile {
+      display: none;
+      position: fixed;
+      top: 68px; left: 0; right: 0;
+      background: rgba(5,3,2,0.98);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+      backdrop-filter: blur(12px);
+      padding: 1.5rem 2rem 2rem;
+      z-index: 99;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-mobile.open { display: flex; }
+
+    .nav-mobile a {
+      font-family: var(--blackletter);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 1.3rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(201,168,76,0.08);
+      transition: color 0.2s;
+    }
+
+    .nav-mobile a:hover, .nav-mobile a.active { color: var(--gold); }
+
+    .nav-mobile-socials {
+      display: flex;
+      gap: 1rem;
+      padding-top: 1rem;
+    }
+
+    .nav-mobile-socials a {
+      border-bottom: none;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--muted);
+    }
+
+    .nav-mobile-socials svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* ── Countdown ── */
+    .countdown-section {
+      padding: 4rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(201,168,76,0.08);
+    }
+
+    .countdown-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .countdown-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .countdown-number {
+      font-family: var(--blackletter);
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      color: var(--gold);
+      line-height: 1;
+      min-width: 2ch;
+      text-align: center;
+    }
+
+    .countdown-unit-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .countdown-sep {
+      font-family: var(--blackletter);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: rgba(201,168,76,0.25);
+      align-self: flex-start;
+      padding-top: 0.1rem;
+    }
+
+    /* ── Om borgen ── */
+    .castle-section {
+      padding: 6rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .castle-section .section-label {
+      font-family: var(--blackletter);
+      font-size: 0.85rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 0.6rem;
+    }
+
+    .castle-section h2 {
+      font-family: var(--blackletter);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: #fff;
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+    }
+
+    .castle-divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0 auto 2rem;
+    }
+
+    .castle-text {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.9;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .castle-text p + p { margin-top: 1.2rem; }
+
+    /* ── Galleri ── */
+    .gallery-section {
+      padding: 2rem 2rem 6rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .gallery-item {
+      aspect-ratio: 4/3;
+      background: linear-gradient(160deg, #1e1510 0%, #2d1e0f 50%, #1a100a 100%);
+      border: 1px solid rgba(201,168,76,0.12);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.4s, box-shadow 0.4s;
+    }
+
+    .gallery-item img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .gallery-item:hover { border-color: rgba(201,168,76,0.4); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    .gallery-item:hover img { transform: scale(1.04); }
+
     /* ── Mobile ── */
     @media (max-width: 600px) {
       nav {
@@ -708,6 +906,15 @@
         align-items: center;
         gap: 0.6rem;
       }
+
+      /* Hide desktop nav items, show hamburger */
+      .nav-links, .nav-socials { display: none; }
+      .nav-hamburger { display: flex; }
+
+      .countdown-grid { gap: 1rem; }
+      .countdown-number { font-size: 2rem; }
+
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
     }
 
     /* ── Scroll reveal ── */
@@ -789,7 +996,26 @@
         <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
       </a>
     </div>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+
+  <!-- Mobile menu -->
+  <div class="nav-mobile" id="navMobile">
+    <a href="#begivenheder">Begivenheder</a>
+    <a href="om.html">Om os</a>
+    <div class="nav-mobile-socials">
+      <a href="https://www.facebook.com/profile.php?id=100091878402241" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </a>
+      <a href="https://www.instagram.com/camp_baestet/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        Instagram
+      </a>
+    </div>
+  </div>
 
   <!-- Hero -->
   <section class="hero" id="hero">
@@ -813,6 +1039,60 @@
 
     <div class="scroll-hint">
       <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+  <!-- Nedtælling -->
+  <div class="countdown-section">
+    <p class="countdown-label">Kongeriget vågner om</p>
+    <div class="countdown-grid">
+      <div class="countdown-unit">
+        <div class="countdown-number" id="cd-days">--</div>
+        <div class="countdown-unit-label">Dage</div>
+      </div>
+      <div class="countdown-sep">·</div>
+      <div class="countdown-unit">
+        <div class="countdown-number" id="cd-hours">--</div>
+        <div class="countdown-unit-label">Timer</div>
+      </div>
+      <div class="countdown-sep">·</div>
+      <div class="countdown-unit">
+        <div class="countdown-number" id="cd-minutes">--</div>
+        <div class="countdown-unit-label">Minutter</div>
+      </div>
+      <div class="countdown-sep">·</div>
+      <div class="countdown-unit">
+        <div class="countdown-number" id="cd-seconds">--</div>
+        <div class="countdown-unit-label">Sekunder</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Om borgen -->
+  <section id="om-borgen">
+    <div class="castle-section reveal">
+      <span class="section-label">Dream City · Roskilde Festival</span>
+      <h2>Borgen</h2>
+      <div class="castle-divider"></div>
+      <div class="castle-text">
+        <p>Hvert år rejser vi en middelalderborg midt i Dream City på Roskilde Festival. Ikke af papir og goodwill — af planker, søm og hård vilje. Tårne, palisader og en port der faktisk lukker.</p>
+        <p>Borgen er vores base, vores scene og vores hjem i én uge. Herfra holder vi begivenheder, fester og det lejlighedsvise råd. Alle 21 bæster bidrager. Ingen slipper.</p>
+        <p>Dream City er Roskilde Festivals univers af selvbyggede konstruktioner — og midt i det hele troner Camp Bæstet.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Galleri -->
+  <section id="galleri">
+    <div class="gallery-section">
+      <div class="section-header reveal" style="text-align:center; margin-bottom:2.5rem;">
+        <span class="section-label">Fra borgen</span>
+        <h2 class="section-title">Galleri</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Billeder indsættes her — læg dem i assets/images/gallery/ -->
+      </div>
     </div>
   </section>
 
@@ -866,6 +1146,45 @@
   </footer>
 
   <script>
+    // ── Hamburger ──
+    const hamburger = document.getElementById('hamburger');
+    const navMobile = document.getElementById('navMobile');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      navMobile.classList.toggle('open');
+    });
+    navMobile.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        hamburger.classList.remove('open');
+        navMobile.classList.remove('open');
+      });
+    });
+
+    // ── Nedtælling til Roskilde 2026 ──
+    // Roskilde Festival starter typisk sidst i juni — sæt dato her
+    const roskilde = new Date('2026-06-27T12:00:00');
+    function updateCountdown() {
+      const now = new Date();
+      const diff = roskilde - now;
+      if (diff <= 0) {
+        document.getElementById('cd-days').textContent = '0';
+        document.getElementById('cd-hours').textContent = '0';
+        document.getElementById('cd-minutes').textContent = '0';
+        document.getElementById('cd-seconds').textContent = '0';
+        return;
+      }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      document.getElementById('cd-days').textContent    = String(d).padStart(2,'0');
+      document.getElementById('cd-hours').textContent   = String(h).padStart(2,'0');
+      document.getElementById('cd-minutes').textContent = String(m).padStart(2,'0');
+      document.getElementById('cd-seconds').textContent = String(s).padStart(2,'0');
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
     // ── Particles ──
     const container = document.getElementById('particles');
     for (let i = 0; i < 80; i++) {
