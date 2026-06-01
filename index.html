@@ -846,21 +846,32 @@
         padding: 0.4rem 0.6rem;
       }
 
-      /* Show more of the top of the image on mobile portrait */
-      @media (max-aspect-ratio: 1/1) {
-        .hero-bg-image {
-          background-position: center 30%;
-        }
+      /* Center hero content on mobile — more robust than flex-end + padding */
+      .hero {
+        justify-content: center;
+      }
+
+      /* Portrait: show more of the background image */
+      .hero-bg-image {
+        background-position: center 25%;
       }
 
       .hero-bottom {
-        padding-bottom: 5rem;
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
+        padding-bottom: 2rem;
+        padding-top: 1rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        width: 100%;
       }
 
       .hero-tagline {
-        font-size: clamp(0.95rem, 4vw, 1.3rem);
+        font-size: clamp(1rem, 5vw, 1.4rem);
+      }
+
+      .hero-sub {
+        font-size: 0.65rem;
+        letter-spacing: 0.25em;
+        margin-bottom: 1.5rem;
       }
 
       .hero-cta {
@@ -871,9 +882,13 @@
 
       .btn {
         width: 100%;
-        max-width: 260px;
+        max-width: 280px;
         text-align: center;
+        padding: 0.85rem 2rem;
       }
+
+      /* Hide scroll arrow on mobile — content is centered, not at bottom */
+      .scroll-hint { display: none; }
 
       /* Events: stack to single column, hide tag */
       .event-item {
@@ -1230,13 +1245,13 @@
       const y = window.scrollY;
       nav.classList.toggle('scrolled', y > 60);
 
-      // Bottom content fades out as you scroll
-      heroBottom.style.transform = `translateY(${y * 0.2}px)`;
-      heroBottom.style.opacity   = Math.max(0, 1 - y / 450);
-
-      // Ornaments drift slowly
-      orn1.style.transform = `translateY(${y * 0.07}px) rotate(${y * 0.01}deg)`;
-      orn2.style.transform = `translateY(${-y * 0.05}px) rotate(${-y * 0.008}deg)`;
+      // Parallax kun på desktop — på mobil rykker det indholdet væk
+      if (window.innerWidth > 600) {
+        heroBottom.style.transform = `translateY(${y * 0.2}px)`;
+        heroBottom.style.opacity   = Math.max(0, 1 - y / 450);
+        orn1.style.transform = `translateY(${y * 0.07}px) rotate(${y * 0.01}deg)`;
+        orn2.style.transform = `translateY(${-y * 0.05}px) rotate(${-y * 0.008}deg)`;
+      }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
