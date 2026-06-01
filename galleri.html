@@ -489,7 +489,7 @@
     // ── Custom guld-cursor + klik-ripple ──
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (fine && !reduce) {
-      document.body.classList.add('has-custom-cursor');
+      document.documentElement.classList.add('has-custom-cursor');
       const dot = document.getElementById('cursorDot');
       const ring = document.getElementById('cursorRing');
       let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
