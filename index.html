@@ -1101,6 +1101,93 @@
       100% { transform: translateY(0); opacity: 1; filter: blur(0); }
     }
 
+    /* ── Levende hero-baggrund: Ken Burns ── */
+    .hero-bg-image {
+      animation: kenburns 34s ease-in-out infinite alternate;
+    }
+    @keyframes kenburns {
+      from { transform: scale(1); }
+      to   { transform: scale(1.09); }
+    }
+
+    /* ── Driftende tåge ── */
+    .hero-fog {
+      position: absolute;
+      inset: -10%;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.6;
+      background:
+        radial-gradient(ellipse 48% 38% at 28% 72%, rgba(190,170,140,0.09), transparent 60%),
+        radial-gradient(ellipse 42% 30% at 72% 80%, rgba(160,140,110,0.08), transparent 60%),
+        radial-gradient(ellipse 55% 40% at 50% 95%, rgba(140,120,95,0.07), transparent 65%);
+      animation: fog-drift 42s ease-in-out infinite alternate;
+    }
+    @keyframes fog-drift {
+      from { transform: translate3d(-3%, 1%, 0) scale(1.05); }
+      to   { transform: translate3d(3%, -1%, 0) scale(1.12); }
+    }
+
+    /* ── Fakkel-lys der følger musen ── */
+    .hero-torch {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+      mix-blend-mode: soft-light;
+      background: radial-gradient(320px circle at var(--tx, 50%) var(--ty, 50%),
+        rgba(255,190,90,0.55), rgba(255,150,60,0.18) 40%, transparent 65%);
+    }
+    .hero:hover .hero-torch { opacity: 1; }
+
+    /* ── Film-grain over hele siden ── */
+    .grain {
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      z-index: 9998;
+      pointer-events: none;
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+      animation: grain 0.6s steps(2) infinite;
+    }
+    @keyframes grain {
+      0%   { transform: translate(0, 0); }
+      25%  { transform: translate(-4%, 3%); }
+      50%  { transform: translate(3%, -4%); }
+      75%  { transform: translate(-3%, -2%); }
+      100% { transform: translate(2%, 4%); }
+    }
+
+    /* ── Sideovergang (gardin) ── */
+    .curtain {
+      position: fixed;
+      inset: 0;
+      z-index: 9997;
+      pointer-events: none;
+      transform: translateY(100%);
+      background:
+        linear-gradient(180deg, #15100a 0%, var(--dark) 100%);
+      transition: transform 0.6s cubic-bezier(0.7, 0, 0.25, 1);
+    }
+    .curtain.cover   { transform: translateY(0); }       /* dækker (udgående) */
+    .curtain.reveal  { transform: translateY(-100%); }   /* løfter væk (indgående) */
+    .curtain::after {
+      content: '⚜';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--blackletter);
+      font-size: 3rem;
+      color: var(--gold);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      text-shadow: 0 0 30px rgba(201,168,76,0.5);
+    }
+    .curtain.cover::after { opacity: 0.9; }
+
     /* ── Respektér reduceret bevægelse ── */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -1111,6 +1198,9 @@
       #intro { display: none; }
       .hero-divider, .section-line, .castle-divider { transform: none; }
       .hero-tagline .word, .hero-sub, .hero-cta { opacity: 1; transform: none; }
+      .hero-bg-image, .hero-fog { animation: none; }
+      .grain { display: none; }
+      .curtain { display: none; }
     }
   </style>
   <script type="application/ld+json">
@@ -1216,6 +1306,12 @@
   <!-- Scroll progress -->
   <div id="progress"></div>
 
+  <!-- Film-grain -->
+  <div class="grain"></div>
+
+  <!-- Sideovergang -->
+  <div class="curtain" id="curtain"></div>
+
   <!-- Filmisk intro -->
   <div id="intro">
     <div class="intro-crest">⚜</div>
@@ -1271,6 +1367,12 @@
     <!-- Background image (parallax) -->
     <div class="hero-bg-image" id="heroBg"></div>
     <div class="hero-overlay"></div>
+
+    <!-- Driftende tåge -->
+    <div class="hero-fog"></div>
+
+    <!-- Fakkel-lys -->
+    <div class="hero-torch" id="heroTorch"></div>
 
     <!-- Particles -->
     <div class="particles" id="particles"></div>
@@ -1476,7 +1578,7 @@
       setTimeout(() => { if (intro) intro.remove(); }, 2900);
     }
 
-    // ── Spotlight + magnetik (kun ikke-touch) ──
+    // ── Spotlight + magnetik + fakkel (kun ikke-touch) ──
     if (!reduce && window.matchMedia('(hover: hover)').matches) {
       // Radial spotlight på begivenheder
       document.querySelectorAll('.event-item').forEach(item => {
@@ -1496,6 +1598,50 @@
           btn.style.transform = `translate(${mx * 0.18}px, ${my * 0.28}px)`;
         });
         btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+      });
+
+      // Fakkel-lys følger musen i hero
+      const hero = document.getElementById('hero');
+      const torch = document.getElementById('heroTorch');
+      if (hero && torch) {
+        hero.addEventListener('mousemove', e => {
+          const r = hero.getBoundingClientRect();
+          torch.style.setProperty('--tx', (e.clientX - r.left) + 'px');
+          torch.style.setProperty('--ty', (e.clientY - r.top) + 'px');
+        });
+      }
+    }
+
+    // ── Sideovergang (gardin) ──
+    const curtain = document.getElementById('curtain');
+    // Indgående: løft gardinet væk ved load
+    function revealPage() {
+      if (!curtain) return;
+      curtain.classList.add('cover');               // start dækket
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        curtain.classList.remove('cover');
+        curtain.classList.add('reveal');            // løft op og væk
+        setTimeout(() => curtain.classList.remove('reveal'), 700);
+      }));
+    }
+    if (!reduce) {
+      window.addEventListener('pageshow', revealPage);
+    }
+    // Udgående: dæk skærmen før navigation til interne sider
+    function isInternal(a) {
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return false;
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+      return a.hostname === window.location.hostname;
+    }
+    if (!reduce && curtain) {
+      document.addEventListener('click', e => {
+        const a = e.target.closest('a');
+        if (!isInternal(a)) return;
+        e.preventDefault();
+        curtain.classList.remove('reveal');
+        curtain.classList.add('cover');
+        setTimeout(() => { window.location.href = a.href; }, 560);
       });
     }
   </script>
