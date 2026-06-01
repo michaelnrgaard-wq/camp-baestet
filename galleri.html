@@ -494,7 +494,8 @@
     }
 
     // ── Custom guld-cursor + klik-ripple ──
-    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+      && navigator.maxTouchPoints === 0 && !('ontouchstart' in window);
     if (fine && !reduce) {
       document.documentElement.classList.add('has-custom-cursor');
       const dot = document.getElementById('cursorDot');
