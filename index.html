@@ -1617,12 +1617,22 @@
     // Indgående: løft gardinet væk ved load
     function revealPage() {
       if (!curtain) return;
-      curtain.classList.add('cover');               // start dækket
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Start dækket UDEN animation, så kun bortglidningen animeres
+      curtain.style.transition = 'none';
+      curtain.classList.remove('reveal');
+      curtain.classList.add('cover');
+      void curtain.offsetWidth;                      // tving reflow
+      requestAnimationFrame(() => {
+        curtain.style.transition = '';               // gendan CSS-overgang
         curtain.classList.remove('cover');
-        curtain.classList.add('reveal');            // løft op og væk
-        setTimeout(() => curtain.classList.remove('reveal'), 700);
-      }));
+        curtain.classList.add('reveal');             // løft op og væk (én bevægelse)
+        setTimeout(() => {
+          curtain.style.transition = 'none';       // nulstil til bund UDEN at feje over skærmen
+          curtain.classList.remove('reveal');
+          void curtain.offsetWidth;
+          curtain.style.transition = '';
+        }, 700);
+      });
     }
     if (!reduce) {
       window.addEventListener('pageshow', revealPage);

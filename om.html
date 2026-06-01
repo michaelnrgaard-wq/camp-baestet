@@ -713,12 +713,22 @@
     const curtain = document.getElementById('curtain');
     function revealPage() {
       if (!curtain) return;
+      // Start dækket UDEN animation, så kun bortglidningen animeres
+      curtain.style.transition = 'none';
+      curtain.classList.remove('reveal');
       curtain.classList.add('cover');
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+      void curtain.offsetWidth;
+      requestAnimationFrame(() => {
+        curtain.style.transition = '';
         curtain.classList.remove('cover');
         curtain.classList.add('reveal');
-        setTimeout(() => curtain.classList.remove('reveal'), 700);
-      }));
+        setTimeout(() => {
+          curtain.style.transition = 'none';       // nulstil til bund UDEN at feje over skærmen
+          curtain.classList.remove('reveal');
+          void curtain.offsetWidth;
+          curtain.style.transition = '';
+        }, 700);
+      });
     }
     function isInternal(a) {
       if (!a || a.target === '_blank' || a.hasAttribute('download')) return false;
