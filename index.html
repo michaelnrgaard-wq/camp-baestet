@@ -1188,6 +1188,79 @@
     }
     .curtain.cover::after { opacity: 0.9; }
 
+    /* ── Site-wide ild/embers bag alt ── */
+    .embers {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    /* løft alt sideindhold over ild-laget */
+    body > nav,
+    body > .nav-mobile,
+    body > section,
+    body > footer,
+    body > .countdown-section { position: relative; z-index: 1; }
+
+    /* ── Pulserende ild-glød (vignet) ── */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(120% 60% at 50% 118%, rgba(200,96,26,0.16), transparent 60%),
+        radial-gradient(100% 50% at 50% -10%, rgba(201,168,76,0.06), transparent 55%);
+      animation: ambient-pulse 7s ease-in-out infinite;
+    }
+    @keyframes ambient-pulse {
+      0%, 100% { opacity: 0.65; }
+      50%      { opacity: 1; }
+    }
+
+    /* ── Custom guld-cursor ── */
+    .cursor-dot, .cursor-ring {
+      position: fixed; top: 0; left: 0;
+      pointer-events: none;
+      z-index: 10000;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      will-change: transform;
+    }
+    .cursor-dot {
+      width: 6px; height: 6px;
+      background: var(--gold);
+      box-shadow: 0 0 8px rgba(201,168,76,0.8);
+    }
+    .cursor-ring {
+      width: 30px; height: 30px;
+      border: 1px solid rgba(201,168,76,0.6);
+      transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    }
+    .cursor-ring.hover {
+      width: 52px; height: 52px;
+      background: rgba(201,168,76,0.08);
+      border-color: rgba(201,168,76,0.9);
+    }
+    .has-custom-cursor, .has-custom-cursor * { cursor: none !important; }
+
+    /* ── Klik-ripple ── */
+    .ripple {
+      position: fixed;
+      z-index: 9996;
+      pointer-events: none;
+      width: 12px; height: 12px;
+      margin: -6px 0 0 -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.5), transparent 70%);
+      transform: scale(0);
+      animation: ripple-out 0.6s ease-out forwards;
+    }
+    @keyframes ripple-out {
+      to { transform: scale(16); opacity: 0; }
+    }
+
     /* ── Respektér reduceret bevægelse ── */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -1199,8 +1272,7 @@
       .hero-divider, .section-line, .castle-divider { transform: none; }
       .hero-tagline .word, .hero-sub, .hero-cta { opacity: 1; transform: none; }
       .hero-bg-image, .hero-fog { animation: none; }
-      .grain { display: none; }
-      .curtain { display: none; }
+      .grain, .curtain, .embers, .ambient { display: none; }
     }
   </style>
   <script type="application/ld+json">
@@ -1305,6 +1377,14 @@
 
   <!-- Scroll progress -->
   <div id="progress"></div>
+
+  <!-- Pulserende ild-glød + site-wide embers (bag alt) -->
+  <div class="ambient"></div>
+  <div class="embers" id="embers" aria-hidden="true"></div>
+
+  <!-- Custom guld-cursor -->
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
 
   <!-- Film-grain -->
   <div class="grain"></div>
@@ -1610,6 +1690,60 @@
           torch.style.setProperty('--ty', (e.clientY - r.top) + 'px');
         });
       }
+    }
+
+    // ── Site-wide ild/embers bag alt ──
+    const embersBox = document.getElementById('embers');
+    if (embersBox && !reduce) {
+      for (let i = 0; i < 70; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.bottom = Math.random() * 100 + '%';
+        p.style.animationDuration = (8 + Math.random() * 20) + 's';
+        p.style.animationDelay = (Math.random() * 25) + 's';
+        const size = 1 + Math.random() * 2.5;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.setProperty('--sway', (Math.random() * 50 - 25) + 'px');
+        const gold = Math.random() > 0.5;
+        const color = gold ? '#c9a84c' : '#c8601a';
+        p.style.background = color;
+        p.style.boxShadow = '0 0 6px ' + color;
+        embersBox.appendChild(p);
+      }
+    }
+
+    // ── Custom guld-cursor + klik-ripple ──
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (fine && !reduce) {
+      document.body.classList.add('has-custom-cursor');
+      const dot = document.getElementById('cursorDot');
+      const ring = document.getElementById('cursorRing');
+      let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
+      addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%)`;
+      });
+      (function loop() {
+        rx += (mx - rx) * 0.18; ry += (my - ry) * 0.18;
+        ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%)`;
+        requestAnimationFrame(loop);
+      })();
+      const hot = 'a, button, .btn, .event-item, .nav-hamburger';
+      document.addEventListener('mouseover', e => { if (e.target.closest(hot)) ring.classList.add('hover'); });
+      document.addEventListener('mouseout',  e => { if (e.target.closest(hot)) ring.classList.remove('hover'); });
+    }
+    if (!reduce) {
+      document.addEventListener('pointerdown', e => {
+        if (!e.target.closest('a, button, .btn, .event-item')) return;
+        const r = document.createElement('span');
+        r.className = 'ripple';
+        r.style.left = e.clientX + 'px';
+        r.style.top = e.clientY + 'px';
+        document.body.appendChild(r);
+        setTimeout(() => r.remove(), 600);
+      });
     }
 
     // ── Sideovergang (gardin) ──

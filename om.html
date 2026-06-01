@@ -449,13 +449,66 @@
     }
     .curtain.cover::after { opacity: 0.9; }
 
+    /* ── Site-wide ild/embers bag alt ── */
+    .embers { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .particle {
+      position: absolute; width: 2px; height: 2px; border-radius: 50%;
+      opacity: 0; animation: float-particle linear infinite;
+    }
+    @keyframes float-particle {
+      0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+      10%  { opacity: 0.9; }
+      50%  { transform: translate(var(--sway, 8px), -50vh) scale(0.8); }
+      90%  { opacity: 0.2; }
+      100% { opacity: 0; transform: translate(0, -100vh) scale(0.3); }
+    }
+    body > nav, body > .nav-mobile, body > .page-header,
+    body > .portraits-section, body > footer { position: relative; z-index: 1; }
+
+    /* ── Pulserende ild-glød ── */
+    .ambient {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(120% 60% at 50% 118%, rgba(200,96,26,0.16), transparent 60%),
+        radial-gradient(100% 50% at 50% -10%, rgba(201,168,76,0.06), transparent 55%);
+      animation: ambient-pulse 7s ease-in-out infinite;
+    }
+    @keyframes ambient-pulse { 0%,100% { opacity: 0.65; } 50% { opacity: 1; } }
+
+    /* ── Custom guld-cursor ── */
+    .cursor-dot, .cursor-ring {
+      position: fixed; top: 0; left: 0; pointer-events: none; z-index: 10000;
+      border-radius: 50%; transform: translate(-50%, -50%); will-change: transform;
+    }
+    .cursor-dot { width: 6px; height: 6px; background: var(--gold); box-shadow: 0 0 8px rgba(201,168,76,0.8); }
+    .cursor-ring {
+      width: 30px; height: 30px; border: 1px solid rgba(201,168,76,0.6);
+      transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    }
+    .cursor-ring.hover { width: 52px; height: 52px; background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.9); }
+    .has-custom-cursor, .has-custom-cursor * { cursor: none !important; }
+
+    /* ── Klik-ripple ── */
+    .ripple {
+      position: fixed; z-index: 9996; pointer-events: none;
+      width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.5), transparent 70%);
+      transform: scale(0); animation: ripple-out 0.6s ease-out forwards;
+    }
+    @keyframes ripple-out { to { transform: scale(16); opacity: 0; } }
+
+    /* ── Blur-up billed-indlæsning ── */
+    .portrait-img img { opacity: 0; filter: blur(8px); }
+    .portrait-img img.loaded { opacity: 1; filter: blur(0); transition: opacity 0.7s ease, filter 0.7s ease, transform 0.8s cubic-bezier(0.2,0.8,0.2,1); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.001ms !important;
       }
-      .grain, .curtain { display: none; }
+      .grain, .curtain, .embers, .ambient { display: none; }
+      .portrait-img img { opacity: 1; filter: none; }
     }
 
     @media (max-width: 600px) {
@@ -490,6 +543,14 @@
   </script>
 </head>
 <body>
+
+  <!-- Pulserende ild-glød + site-wide embers (bag alt) -->
+  <div class="ambient"></div>
+  <div class="embers" id="embers" aria-hidden="true"></div>
+
+  <!-- Custom guld-cursor -->
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
 
   <!-- Film-grain -->
   <div class="grain"></div>
@@ -708,8 +769,68 @@
       });
     });
 
-    // ── Sideovergang (gardin) ──
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── Site-wide ild/embers bag alt ──
+    const embersBox = document.getElementById('embers');
+    if (embersBox && !reduce) {
+      for (let i = 0; i < 70; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.bottom = Math.random() * 100 + '%';
+        p.style.animationDuration = (8 + Math.random() * 20) + 's';
+        p.style.animationDelay = (Math.random() * 25) + 's';
+        const size = 1 + Math.random() * 2.5;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.setProperty('--sway', (Math.random() * 50 - 25) + 'px');
+        const color = Math.random() > 0.5 ? '#c9a84c' : '#c8601a';
+        p.style.background = color;
+        p.style.boxShadow = '0 0 6px ' + color;
+        embersBox.appendChild(p);
+      }
+    }
+
+    // ── Blur-up: ton portrætter ind når de er loadet ──
+    document.querySelectorAll('.portrait-img img').forEach(img => {
+      if (img.complete && img.naturalWidth > 0) img.classList.add('loaded');
+      else img.addEventListener('load', () => img.classList.add('loaded'));
+    });
+
+    // ── Custom guld-cursor + klik-ripple ──
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (fine && !reduce) {
+      document.body.classList.add('has-custom-cursor');
+      const dot = document.getElementById('cursorDot');
+      const ring = document.getElementById('cursorRing');
+      let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
+      addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%)`;
+      });
+      (function loop() {
+        rx += (mx - rx) * 0.18; ry += (my - ry) * 0.18;
+        ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%)`;
+        requestAnimationFrame(loop);
+      })();
+      const hot = 'a, button, .portrait-card, .nav-hamburger';
+      document.addEventListener('mouseover', e => { if (e.target.closest(hot)) ring.classList.add('hover'); });
+      document.addEventListener('mouseout',  e => { if (e.target.closest(hot)) ring.classList.remove('hover'); });
+    }
+    if (!reduce) {
+      document.addEventListener('pointerdown', e => {
+        if (!e.target.closest('a, button, .portrait-card')) return;
+        const r = document.createElement('span');
+        r.className = 'ripple';
+        r.style.left = e.clientX + 'px';
+        r.style.top = e.clientY + 'px';
+        document.body.appendChild(r);
+        setTimeout(() => r.remove(), 600);
+      });
+    }
+
+    // ── Sideovergang (gardin) ──
     const curtain = document.getElementById('curtain');
     function revealPage() {
       if (!curtain) return;
