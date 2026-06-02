@@ -286,6 +286,12 @@
     }
     @keyframes ripple-out { to { transform: scale(16); opacity: 0; } }
 
+
+    /* ── CSS containment (GPU-lag isolation) ── */
+    .grain, .embers, .ambient, .curtain, .cursor-dot, .cursor-ring {
+      contain: layout style paint;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important;
@@ -370,12 +376,12 @@
   <div class="gallery-section">
     <div class="gallery-grid">
       <div class="gallery-item reveal"><img src="./assets/images/gallery/681679889_1525479999090184_5797225564190077818_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.05s"><img src="./assets/images/gallery/709706557_1331600662280218_4815885418696950445_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.1s"><img src="./assets/images/gallery/710306388_918566157869288_8436540224920947137_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.15s"><img src="./assets/images/gallery/710314356_3862138584095640_4543992210691394201_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.2s"><img src="./assets/images/gallery/710468026_1356424289921404_5176286351485995116_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.25s"><img src="./assets/images/gallery/710496676_1739458437049316_5420710682849218733_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
-      <div class="gallery-item reveal" style="transition-delay:0.3s"><img src="./assets/images/gallery/711630212_961100903586460_7490164899327763829_n.jpg" alt="Camp Bæstet" loading="lazy" /></div>
+      <div class="gallery-item reveal" style="transition-delay:0.05s"><picture><source srcset="./assets/images/gallery/709706557_1331600662280218_4815885418696950445_n.webp" type="image/webp"><img src="./assets/images/gallery/709706557_1331600662280218_4815885418696950445_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
+      <div class="gallery-item reveal" style="transition-delay:0.1s"><picture><source srcset="./assets/images/gallery/710306388_918566157869288_8436540224920947137_n.webp" type="image/webp"><img src="./assets/images/gallery/710306388_918566157869288_8436540224920947137_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
+      <div class="gallery-item reveal" style="transition-delay:0.15s"><picture><source srcset="./assets/images/gallery/710314356_3862138584095640_4543992210691394201_n.webp" type="image/webp"><img src="./assets/images/gallery/710314356_3862138584095640_4543992210691394201_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
+      <div class="gallery-item reveal" style="transition-delay:0.2s"><picture><source srcset="./assets/images/gallery/710468026_1356424289921404_5176286351485995116_n.webp" type="image/webp"><img src="./assets/images/gallery/710468026_1356424289921404_5176286351485995116_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
+      <div class="gallery-item reveal" style="transition-delay:0.25s"><picture><source srcset="./assets/images/gallery/710496676_1739458437049316_5420710682849218733_n.webp" type="image/webp"><img src="./assets/images/gallery/710496676_1739458437049316_5420710682849218733_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
+      <div class="gallery-item reveal" style="transition-delay:0.3s"><picture><source srcset="./assets/images/gallery/711630212_961100903586460_7490164899327763829_n.webp" type="image/webp"><img src="./assets/images/gallery/711630212_961100903586460_7490164899327763829_n.jpg" alt="Camp Bæstet" loading="lazy" /></picture></div>
     </div>
   </div>
 

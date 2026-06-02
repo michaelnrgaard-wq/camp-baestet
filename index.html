@@ -14,6 +14,8 @@
   <meta name="twitter:title" content="Camp Bæstet — Dream City, Roskilde" />
   <link rel="canonical" href="https://www.bæstet.dk/" />
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin>
+  <link rel="preload" as="image" href="./assets/images/background.webp" type="image/webp" fetchpriority="high">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Cloister Black via cdnfonts -->
@@ -157,7 +159,11 @@
     .hero-bg-image {
       position: absolute;
       inset: 0;
-      background-image: url('./assets/images/background.jpg');
+      background-image: url('./assets/images/background.webp');
+        background-image: image-set(
+          url('./assets/images/background.webp') type('image/webp'),
+          url('./assets/images/background.jpg') type('image/jpeg')
+        );
       background-size: cover;
       background-position: center 80%;
       background-repeat: no-repeat;
@@ -1267,6 +1273,11 @@
       to { transform: scale(16); opacity: 0; }
     }
 
+
+    /* ── CSS containment (GPU-lag isolation) ── */
+    .grain, .embers, .ambient, .curtain, .cursor-dot, .cursor-ring {
+      contain: layout style paint;
+    }
     /* ── Respektér reduceret bevægelse ── */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
