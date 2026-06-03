@@ -94,43 +94,17 @@
     /* Fjern de gamle knapper under canvasset — vises ikke laengere */
     .touch-controls { display: none !important; }
 
-    /* ── Mobil landscape: spillet fylder hele skaermen ── */
-    @media (max-width: 960px) and (orientation: landscape) {
-      nav, .game-title, .game-subtitle, .controls-hint,
-      .scores-section, .touch-controls { display: none !important; }
-      body { overflow: hidden; touch-action: none; background: #000; }
-      .game-wrapper { margin-top: 0; padding: 0; height: 100svh;
-        justify-content: center; align-items: center; }
-      .canvas-wrap { border: none; box-shadow: none; height: 100svh;
-        width: auto; max-width: 100vw; display: flex; align-items: center; }
-      #gameCanvas { width: auto !important; height: 100svh !important;
-        max-width: 100vw; }
+    /* ── Mobil (alle retninger) ── */
+    @media (max-width: 768px) {
+      nav { height: 48px; padding: 0 1rem; }
+      .nav-logo { font-size: 1.1rem; }
+      .nav-mobile { top: 48px; }
+      .game-wrapper { margin-top: 48px; padding: 0; }
+      .game-title, .game-subtitle, .controls-hint,
+      .scores-section { display: none !important; }
+      .canvas-wrap { border: none; box-shadow: none; }
       .touch-overlay { display: block; }
-    }
-
-    /* ── Mobil portrait: bed om at dreje ─────────────── */
-    @media (max-width: 768px) and (orientation: portrait) {
-      .rotate-hint { display: flex !important; }
-    }
-
-    /* Drej-din-telefon overlay */
-    .rotate-hint {
-      display: none;
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(10,8,5,0.97);
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 1.8rem;
-    }
-    .rotate-hint svg { width: 72px; height: 72px; fill: var(--gold);
-      animation: rotpulse 2.2s ease-in-out infinite; }
-    .rotate-hint p { font-family: var(--blackletter); color: var(--gold);
-      font-size: 1.25rem; letter-spacing: 0.06em; text-align: center;
-      text-shadow: 0 0 20px rgba(201,168,76,0.4); }
-    @keyframes rotpulse {
-      0%,100% { transform: rotate(0deg);  opacity: 1;   }
-      40%      { transform: rotate(90deg); opacity: 0.7; }
-      60%      { transform: rotate(90deg); opacity: 0.7; }
+      body { overflow: hidden; touch-action: none; }
     }
 
     .controls-hint { display:flex; gap:2rem; flex-wrap:wrap; justify-content:center; margin-top:1.2rem; }
@@ -182,11 +156,6 @@
   <!-- Spil-link er bevidst skjult fra navigation -->
 </div>
 
-<!-- Drej-din-telefon overlay (kun vist i portrait paa mobil) -->
-<div class="rotate-hint" aria-hidden="true">
-  <svg viewBox="0 0 24 24"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.55C23.59 5.3 20.08 1.08 15.33.1L16.48 2.52zM7.52 21.48C4.25 19.94 1.91 16.76 1.55 13H0c.41 5.7 3.92 9.92 8.67 10.9L7.52 21.48zM1.55 11c.29-2.91 1.71-5.49 3.8-7.33L3.93 2.25C1.45 4.57-.06 7.85 0 11h1.55zm20.9 2c-.29 2.91-1.71 5.49-3.8 7.33l1.42 1.42C22.55 19.43 24.06 16.15 24 13h-1.55zM11 2h2V0h-2v2zm0 22h2v-2h-2v2zM0 12h2v-2H0v2zm22 0h2v-2h-2v2z"/></svg>
-  <p>Drej din telefon<br>for at spille</p>
-</div>
 
 <div class="game-wrapper">
   <h1 class="game-title">Ringridning</h1>
@@ -1867,9 +1836,10 @@ function esc(s) {
 
 // ── Loop ───────────────────────────────────────────────
 canvas.addEventListener('click', handleTap);
-canvas.addEventListener('touchstart', e => { e.preventDefault(); handleTap(); }, { passive:false });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(actx&&actx.state==='suspended')actx.resume(); handleTap(); }, { passive:false });
 
 function handleTap() {
+  initAudio(); if(actx&&actx.state==='suspended')actx.resume();
   if (gState === 'start') { resetAll(); gState = 'playing'; }
   else if (gState === 'dead') { gState = 'entry'; }
 }
