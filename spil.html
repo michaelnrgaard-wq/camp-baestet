@@ -87,7 +87,7 @@
     .touch-controls { display: none !important; }
 
     /* ── Mobil: fylder hele skaermen ── */
-    @media (max-width: 768px) {
+    @media (max-width: 480px) {
       nav, .game-title, .game-subtitle, .controls-hint,
       .scores-section { display: none !important; }
 
@@ -1880,7 +1880,7 @@ function fixMobileHeight() {
   const wrap = document.querySelector('.canvas-wrap');
   const gw   = document.querySelector('.game-wrapper');
   if (!wrap || !gw) return;
-  if (window.innerWidth <= 768) {
+  if (window.innerWidth <= 480) {
     // Mobil: sæt præcis skærmstørrelse (iOS Safari-fix)
     wrap.style.width  = window.innerWidth  + 'px';
     wrap.style.height = window.innerHeight + 'px';
