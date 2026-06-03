@@ -148,6 +148,7 @@
     .scores-table tr:nth-child(3) td { color:#c8864a; }
     .scores-note { text-align:center; color:var(--muted); font-size:.82rem; padding:1rem; font-style:italic; }
   </style>
+<script src="config.js"></script>
 </head>
 <body>
 
@@ -248,76 +249,18 @@ ctx.imageSmoothingEnabled = false;
 
 const VW = 480, VH = 270;
 
-// ════════════════════════════════════════════════════════
-//  CONFIG — skru paa spillet her
-//  Alle gameplay-tal samlet ét sted, saa balancen nemt kan justeres.
-// ════════════════════════════════════════════════════════
-const CONFIG = {
-  // ── Hastighed ──
-  startSpeed:      1.8,   // px pr. step ved start
-  maxSpeed:        5.5,   // oevre graense
-  speedRampEvery:  150,   // steps mellem hver hastighedsforoegelse (60 steps = 1 sek)
-  speedRampAmount: 0.14,  // hvor meget hastigheden stiger hver gang
+// CONFIG er nu i config.js — indlæses via <script> i <head>
 
-  // ── Liv / oel ──
-  healthMax:    100,
-  healthDrain:  0.032,    // liv tabt pr. frame (~1.9 pr. sekund) — man toemer paa ~52 sek uden oel
-  beerHeal:     30,       // liv pr. oel
-  tentDamage:   12,       // liv tabt ved sammenstoed med telt
-
-  // ── Telt-sammenstoed ──
-  tentSpeedLoss: 1.3,     // hvor meget fart man mister ved at ramme et telt
-
-  // ── Hop ──
-  jumpSmall:          -4.0,   // lille hop (kort tryk) — naar IKKE op paa platforme
-  jumpBoostPerFrame:  -0.32,  // ekstra opadgaaende kraft pr. frame (hold)
-  jumpBoostMaxFrames:  18,    // max frames med boost → max vy = -4.0 - 18*0.32 = -9.76
-
-  // ── Bane-generering ──
-  //  Afstande i spillets interne px (banen er 480 bred).
-  gen: {
-    // ── n1: jord-niveau (sjaeldne ringe, ingen oel) ──
-    minGap:        120,
-    maxGap:        220,
-    gapAfterTent:  180,
-    weightRing:    22,   // faerre ringe paa jorden
-    weightBeer:    0,    // INGEN oel paa jorden — oel er kun paa platforme
-    weightTent:    18,
-    weightBird:    14,
-    minBeerGap:    999999, // bruges ikke (beer=0), men undgaar fejl
-    ringGroupMin:      1,
-    ringGroupMax:      1,  // maks 1 ring ad gangen paa jorden
-    ringGroupSpacing:  30,
-    highRingChance:    0,  // ingen hojt-placerede ringe paa grund-niveau
-
-    // ── n2: flyvende platforme (kun ringe) ──
-    platformMinW:      70,
-    platformMaxW:      130,
-    platformGapMin:    160,
-    platformGapMax:    300,
-    platformY:         158,  // n2 overflade Y
-    n2RingMin:         2,
-    n2RingMax:         4,
-    n2RingSpacing:     28,
-
-    // ── n3: hojt flyvende platforme (oel, kræver to hop) ──
-    platformY3:        82,
-    n3MinW:            55,
-    n3MaxW:            95,
-    n3OffsetMin:       30,
-    n3OffsetMax:       90,
-
-    // Oel-sandsynlighed paa N3 — falder med distancen
-    n3BeerStart:       0.35,  // chance ved start (efter foerste garanterede oel)
-    n3BeerPer1000m:    0.06,  // reduktion pr. 1000 m
-    n3BeerMin:         0.08,  // bundgraense
-
-    // Svaerhedsgrad
-    difficultyDistance: 4000,
-    gapTightenMax:      0.35,
-    tentWeightBonus:    14,
-  },
-};
+// rnd(min, max): tilfældig værdi skaleret af CONFIG.RANDOMNESS.
+// Ved RANDOMNESS=1 = standard uniform fordeling.
+// Ved RANDOMNESS>1 = bredere udsving (mere kaotisk).
+// Ved RANDOMNESS<1 = snævrere udsving (mere regelmæssig).
+function rnd(min, max) {
+  const base  = (min + max) / 2;
+  const range = (max - min) / 2;
+  const val   = base + (Math.random() - 0.5) * 2 * range * CONFIG.RANDOMNESS;
+  return Math.max(min * 0.6, Math.min(max * 1.6, val));  // tillad lidt overflow begge veje
+}
 
 // ── Fysik-konstanter (spiller & sprites) ───────────────
 const GRAVITY        = 0.38;
@@ -746,13 +689,13 @@ function generate() {
 
 function spawnNextPlatform() {
   const g = CONFIG.gen;
-  const pw = g.platformMinW + Math.random() * (g.platformMaxW - g.platformMinW);
+  const pw = rnd(g.platformMinW, g.platformMaxW);
   const py = g.platformY;
 
   // ── N2: kun ringe i raekke ──
   platforms.push({ x: platformX, y: py, w: pw, tier: 2 });
 
-  const n = g.n2RingMin + Math.floor(Math.random() * (g.n2RingMax - g.n2RingMin + 1));
+  const n = g.n2RingMin + Math.floor(rnd(0, g.n2RingMax - g.n2RingMin + 0.99));
   const totalW = (n - 1) * g.n2RingSpacing;
   const startX = platformX + (pw - totalW) / 2;
   for (let i = 0; i < n; i++) {
@@ -761,8 +704,8 @@ function spawnNextPlatform() {
   }
 
   // ── N3: paired med N2, oel med faldende sandsynlighed ──
-  const n3offset = g.n3OffsetMin + Math.random() * (g.n3OffsetMax - g.n3OffsetMin);
-  const n3w = g.n3MinW + Math.random() * (g.n3MaxW - g.n3MinW);
+  const n3offset = rnd(g.n3OffsetMin, g.n3OffsetMax);
+  const n3w = rnd(g.n3MinW, g.n3MaxW);
   const n3x = platformX + n3offset;
   platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
 
@@ -776,7 +719,7 @@ function spawnNextPlatform() {
     firstBeerGiven = true;
   }
 
-  const gap = g.platformGapMin + Math.random() * (g.platformGapMax - g.platformGapMin);
+  const gap = rnd(g.platformGapMin, g.platformGapMax);
   platformX += pw + gap;
 }
 
@@ -815,7 +758,7 @@ function spawnNext() {
     lastObstacle = true;
   }
 
-  const gap = (g.minGap + Math.random() * (g.maxGap - g.minGap)) * tighten + extraGap;
+  const gap = rnd(g.minGap, g.maxGap) * tighten + extraGap;
   spawnX += gap;
 }
 
