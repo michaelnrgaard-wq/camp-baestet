@@ -103,6 +103,10 @@ const CONFIG = {
     //     Indeholder kun ringe — øl er forbeholdt N3.
     // ════════════════════════════════════════════════════════════════
 
+    platformSpawnChance: 0.50,
+    //  Sandsynlighed for at en N2 overhovedet spawner ved hvert forsøg.
+    //  0.3 = sjælden  •  0.5 = standard  •  0.8 = næsten altid
+
     platformMinW:    70,    // platform-bredde (px)
     platformMaxW:    130,
     platformGapMin:  160,   // afstand mellem N2-platforme

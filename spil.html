@@ -689,12 +689,19 @@ function generate() {
 
 function spawnNextPlatform() {
   const g = CONFIG.gen;
+  const gap = rnd(g.platformGapMin, g.platformGapMax);
+
+  // N2 spawner kun med en vis sandsynlighed — ikke altid
+  if (Math.random() > g.platformSpawnChance) {
+    platformX += gap;  // spring over, ryk cursor frem
+    return;
+  }
+
   const pw = rnd(g.platformMinW, g.platformMaxW);
   const py = g.platformY;
 
-  // ── N2: kun ringe i raekke ──
+  // ── N2: kun ringe ──
   platforms.push({ x: platformX, y: py, w: pw, tier: 2 });
-
   const n = g.n2RingMin + Math.floor(rnd(0, g.n2RingMax - g.n2RingMin + 0.99));
   const totalW = (n - 1) * g.n2RingSpacing;
   const startX = platformX + (pw - totalW) / 2;
@@ -703,23 +710,20 @@ function spawnNextPlatform() {
                  y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
   }
 
-  // ── N3: paired med N2, oel med faldende sandsynlighed ──
-  const n3offset = rnd(g.n3OffsetMin, g.n3OffsetMax);
-  const n3w = rnd(g.n3MinW, g.n3MaxW);
-  const n3x = platformX + n3offset;
-  platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
-
-  // Foerste N3 = garanteret oel (tutorial). Derefter faldende chance pr. 1000 m.
+  // ── N3: KUN hvis der er øl — ingen tomme N3-platforme ──
   const meters = worldX / 10;
   const beerChance = !firstBeerGiven ? 1
     : Math.max(g.n3BeerMin, g.n3BeerStart - Math.floor(meters / 1000) * g.n3BeerPer1000m);
 
   if (Math.random() < beerChance) {
+    const n3offset = rnd(g.n3OffsetMin, g.n3OffsetMax);
+    const n3w = rnd(g.n3MinW, g.n3MaxW);
+    const n3x = platformX + n3offset;
+    platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
     items.push({ type:'beer', x: n3x + n3w/2, y: PLATFORM_Y3 - 16, alive: true });
     firstBeerGiven = true;
   }
 
-  const gap = rnd(g.platformGapMin, g.platformGapMax);
   platformX += pw + gap;
 }
 
