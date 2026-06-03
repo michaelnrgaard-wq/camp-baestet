@@ -290,16 +290,22 @@ const CONFIG = {
     ringGroupSpacing:  30,
     highRingChance:    0,  // ingen hojt-placerede ringe paa grund-niveau
 
-    // ── n2: flyvende platforme ──
-    platformMinW:      70,   // platform-bredde
+    // ── n2: flyvende platforme (kun ringe) ──
+    platformMinW:      70,
     platformMaxW:      130,
-    platformGapMin:    160,  // min afstand mellem platforme
-    platformGapMax:    300,  // max afstand
-    platformY:         158,  // platform-overflade Y — hojt hop naar 40px OVER dette
-    n2BeerChance:      0.40, // 40% chance for oel paa platform (ellers ringe)
-    n2RingMin:         2,    // min ringe i raekke paa platform
-    n2RingMax:         4,    // max ringe i raekke paa platform
+    platformGapMin:    160,
+    platformGapMax:    300,
+    platformY:         158,  // n2 overflade Y
+    n2RingMin:         2,
+    n2RingMax:         4,
     n2RingSpacing:     28,
+
+    // ── n3: hojt flyvende platforme (kun oel — kræver to hop) ──
+    platformY3:        82,   // n3 overflade Y (kun naabar fra n2)
+    n3MinW:            55,   // n3 bredde
+    n3MaxW:            95,
+    n3OffsetMin:       30,   // n3 starter X px efter n2-start (saa man lander paa n2 foerst)
+    n3OffsetMax:       90,
 
     // Svaerhedsgrad
     difficultyDistance: 4000,
@@ -312,6 +318,7 @@ const CONFIG = {
 const GRAVITY        = 0.38;
 const JUMP_VY        = -8.2;  // ubrugt (erstattet af CONFIG.jumpSmall + boost)
 const PLATFORM_H     = 10;    // platformens visuelle tykkelse
+const PLATFORM_Y3    = 82;    // n3 overflade Y (synkroniseret med CONFIG — ikke skift ét uden det andet)
 const PLAYER_SX      = 92;
 const GROUND_Y       = 222;
 const PW             = 20;   // spiller hitbox bredde
@@ -733,26 +740,27 @@ function generate() {
 
 function spawnNextPlatform() {
   const g = CONFIG.gen;
-  const d = difficulty();
   const pw = g.platformMinW + Math.random() * (g.platformMaxW - g.platformMinW);
   const py = g.platformY;
 
-  platforms.push({ x: platformX, y: py, w: pw });
+  // ── N2: kun ringe i raekke ──
+  platforms.push({ x: platformX, y: py, w: pw, tier: 2 });
 
-  // n2-items: oel ELLER ringe i raekke
-  if (Math.random() < g.n2BeerChance) {
-    // Oel midt paa platformen
-    items.push({ type:'beer', x: platformX + pw/2, y: py - 16, alive: true });
-  } else {
-    // 2-4 ringe i raekke over platformen
-    const n = g.n2RingMin + Math.floor(Math.random() * (g.n2RingMax - g.n2RingMin + 1));
-    const totalW = (n - 1) * g.n2RingSpacing;
-    const startX = platformX + (pw - totalW) / 2;  // centreret over platformen
-    for (let i = 0; i < n; i++) {
-      items.push({ type:'ring', x: startX + i * g.n2RingSpacing,
-                   y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
-    }
+  const n = g.n2RingMin + Math.floor(Math.random() * (g.n2RingMax - g.n2RingMin + 1));
+  const totalW = (n - 1) * g.n2RingSpacing;
+  const startX = platformX + (pw - totalW) / 2;
+  for (let i = 0; i < n; i++) {
+    items.push({ type:'ring', x: startX + i * g.n2RingSpacing,
+                 y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
   }
+
+  // ── N3: spawner paired over/efter N2, KUN med oel ──
+  // Starter lidt inde paa N2 saa man lander paa N2 foerst og derefter hopper op
+  const n3offset = g.n3OffsetMin + Math.random() * (g.n3OffsetMax - g.n3OffsetMin);
+  const n3w = g.n3MinW + Math.random() * (g.n3MaxW - g.n3MinW);
+  const n3x = platformX + n3offset;
+  platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
+  items.push({ type:'beer', x: n3x + n3w/2, y: PLATFORM_Y3 - 16, alive: true });
 
   const gap = g.platformGapMin + Math.random() * (g.platformGapMax - g.platformGapMin);
   platformX += pw + gap;
@@ -780,14 +788,8 @@ function spawnNext() {
     spawnRingGroup();
     lastObstacle = false;
   } else if (roll < wRing + wBeer) {
-    // Oel kun hvis der ikke allerede er én i banen OG der er gaaet langt nok
-    const beerInPlay = items.some(i => i.alive && i.type === 'beer');
-    if (!beerInPlay && spawnX - lastBeerSpawnX >= g.minBeerGap) {
-      items.push({ type:'beer', x:spawnX, y:GROUND_Y - 16, alive:true });
-      lastBeerSpawnX = spawnX;
-    } else {
-      spawnRingGroup();   // for tidligt til ny oel -> ring i stedet
-    }
+    // wBeer=0 saa denne gren aldrig rammes — oel er udelukkende paa N3
+    spawnRingGroup();
     lastObstacle = false;
   } else if (roll < wRing + wBeer + wTent) {
     items.push({ type:'tent', x:spawnX, y:GROUND_Y - TENT_H, w:TENT_W, h:TENT_H, alive:true });
@@ -1135,25 +1137,29 @@ function drawFloatingPlatform(pl) {
   const w  = pl.w | 0;
   if (sx + w < -2 || sx > VW + 2) return;
 
-  // Hoved-sten (lidt lysere end jord saa det skiller sig ud)
-  ctx.fillStyle = C.stoneB;
+  const isN3 = pl.tier === 3;
+
+  // N3: guld-farvet kant for at signalere "speciel"
+  ctx.fillStyle = isN3 ? '#2a2010' : C.stoneB;
   ctx.fillRect(sx, pl.y, w, PLATFORM_H);
 
-  // Top-kant + graes
-  ctx.fillStyle = C.stoneTop;
+  // Top-kant
+  ctx.fillStyle = isN3 ? C.goldDk : C.stoneTop;
   ctx.fillRect(sx, pl.y, w, 2);
-  ctx.fillStyle = C.grass;
+
+  // Graes/guld-linje
+  ctx.fillStyle = isN3 ? C.gold : C.grass;
   ctx.fillRect(sx, pl.y, w, 1);
 
-  // Graes-straa
-  ctx.fillStyle = C.grassHi;
-  for (let gx = 3; gx < w - 2; gx += 5) ctx.fillRect(sx + gx, pl.y - 1, 1, 2);
+  // Straa / glimt
+  ctx.fillStyle = isN3 ? C.goldHi : C.grassHi;
+  for (let gx = 3; gx < w - 2; gx += 5) ctx.fillRect(sx + gx, pl.y - 1, 1, isN3 ? 3 : 2);
 
-  // Bund-skygge (giver "svaevert" loek)
-  ctx.fillStyle = C.stoneSh;
+  // Bund-skygge
+  ctx.fillStyle = isN3 ? C.goldDk : C.stoneSh;
   ctx.fillRect(sx, pl.y + PLATFORM_H - 2, w, 2);
 
-  // Stenfoeger
+  // Fuger
   ctx.fillStyle = C.stoneC;
   for (let bx = 0; bx < w; bx += 18) ctx.fillRect(sx + bx, pl.y + 2, 1, PLATFORM_H - 4);
 }
