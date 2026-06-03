@@ -542,6 +542,48 @@
       .grain { display: none; }
     }
   </style>
+/* ── Cookie-banner ── */
+    .cookie-banner {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      z-index: 9995;
+      background: rgba(19,15,10,0.97);
+      border: 1px solid rgba(201,168,76,0.35);
+      border-radius: 4px;
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      max-width: min(560px, 92vw);
+      width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 20px rgba(201,168,76,0.06);
+      backdrop-filter: blur(10px);
+      transition: transform 0.5s cubic-bezier(0.2,0.8,0.2,1);
+    }
+    .cookie-banner.show { transform: translateX(-50%) translateY(0); }
+    .cookie-banner p {
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.5;
+      flex: 1;
+      margin: 0;
+    }
+    .cookie-btn {
+      font-family: var(--blackletter);
+      font-size: 0.85rem;
+      background: var(--gold);
+      color: var(--dark);
+      border: none;
+      border-radius: 2px;
+      padding: 0.55rem 1.2rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+    .cookie-btn:hover { background: var(--gold2); transform: translateY(-1px); }
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -554,6 +596,12 @@
   </script>
 </head>
 <body>
+
+  <!-- Cookie-banner -->
+  <div class="cookie-banner" id="cookieBanner">
+    <p>Denne hjemmeside bruger ikke cookies. Jeg ved ikke engang, hvad cookies er 👉👈</p>
+    <button class="cookie-btn" id="cookieAccept">Accepter</button>
+  </div>
 
   <!-- Pulserende ild-glød + site-wide embers (bag alt) -->
   <div class="ambient"></div>
@@ -762,6 +810,19 @@
   </footer>
 
   <script>
+    // ── Cookie-banner ──
+    (function() {
+      if (localStorage.getItem('cookieOK')) return;
+      const banner = document.getElementById('cookieBanner');
+      const btn    = document.getElementById('cookieAccept');
+      if (!banner) return;
+      setTimeout(() => banner.classList.add('show'), 800);
+      btn.addEventListener('click', () => {
+        banner.classList.remove('show');
+        localStorage.setItem('cookieOK', '1');
+      });
+    })();
+
     const reveals = document.querySelectorAll('.reveal');
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => {
