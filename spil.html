@@ -1877,16 +1877,22 @@ function esc(s) {
 // iOS Safari: sæt canvas-størrelse til præcis window.innerHeight
 // (dvs. det reelle synlige areal inkl. adressebar-fri zone)
 function fixMobileHeight() {
-  if (window.innerWidth > 768) return;
-  const h = window.innerHeight + 'px';
-  const w = window.innerWidth  + 'px';
   const wrap = document.querySelector('.canvas-wrap');
   const gw   = document.querySelector('.game-wrapper');
   if (!wrap || !gw) return;
-  wrap.style.width  = w;
-  wrap.style.height = h;
-  gw.style.width    = w;
-  gw.style.height   = h;
+  if (window.innerWidth <= 768) {
+    // Mobil: sæt præcis skærmstørrelse (iOS Safari-fix)
+    wrap.style.width  = window.innerWidth  + 'px';
+    wrap.style.height = window.innerHeight + 'px';
+    gw.style.width    = window.innerWidth  + 'px';
+    gw.style.height   = window.innerHeight + 'px';
+  } else {
+    // Desktop: ryd inline-styles så CSS-reglerne gælder
+    wrap.style.width  = '';
+    wrap.style.height = '';
+    gw.style.width    = '';
+    gw.style.height   = '';
+  }
 }
 fixMobileHeight();
 window.addEventListener('resize', fixMobileHeight);
