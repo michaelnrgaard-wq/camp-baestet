@@ -697,10 +697,19 @@ function spawnNextPlatform() {
     return;
   }
 
-  const pw = rnd(g.platformMinW, g.platformMaxW);
+  // Tjek beer-chance FOERST — saa vi ved om N3 kommer og kan stoerre-sætte N2
+  const meters = worldX / 10;
+  const beerChance = !firstBeerGiven ? 1
+    : Math.max(g.n3BeerMin, g.n3BeerStart - Math.floor(meters / 1000) * g.n3BeerPer1000m);
+  const hasN3 = Math.random() < beerChance;
+
+  // N2 er stor naar der er N3 (god afsaet) — normal naar der ikke er
+  const pw = hasN3
+    ? rnd(g.n2WithN3MinW, g.n2WithN3MaxW)
+    : rnd(g.platformMinW, g.platformMaxW);
   const py = g.platformY;
 
-  // ── N2: kun ringe ──
+  // ── N2: ringe ──
   platforms.push({ x: platformX, y: py, w: pw, tier: 2 });
   const n = g.n2RingMin + Math.floor(rnd(0, g.n2RingMax - g.n2RingMin + 0.99));
   const totalW = (n - 1) * g.n2RingSpacing;
@@ -710,15 +719,11 @@ function spawnNextPlatform() {
                  y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
   }
 
-  // ── N3: KUN hvis der er øl — ingen tomme N3-platforme ──
-  const meters = worldX / 10;
-  const beerChance = !firstBeerGiven ? 1
-    : Math.max(g.n3BeerMin, g.n3BeerStart - Math.floor(meters / 1000) * g.n3BeerPer1000m);
-
-  if (Math.random() < beerChance) {
-    const n3offset = rnd(g.n3OffsetMin, g.n3OffsetMax);
-    const n3w = rnd(g.n3MinW, g.n3MaxW);
-    const n3x = platformX + n3offset;
+  // ── N3: starter til HOEJRE for N2's hoejrekant ──
+  if (hasN3) {
+    const n3gap = rnd(g.n3GapMin, g.n3GapMax);  // luft mellem N2 og N3
+    const n3w   = rnd(g.n3MinW, g.n3MaxW);
+    const n3x   = platformX + pw + n3gap;        // fast til hoejre for N2
     platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
     items.push({ type:'beer', x: n3x + n3w/2, y: PLATFORM_Y3 - 16, alive: true });
     firstBeerGiven = true;

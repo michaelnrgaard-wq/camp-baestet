@@ -107,8 +107,10 @@ const CONFIG = {
     //  Sandsynlighed for at en N2 overhovedet spawner ved hvert forsøg.
     //  0.3 = sjælden  •  0.5 = standard  •  0.8 = næsten altid
 
-    platformMinW:    70,    // platform-bredde (px)
-    platformMaxW:    130,
+    platformMinW:    70,    // N2-bredde når der IKKE er N3
+    platformMaxW:    110,
+    n2WithN3MinW:    110,   // N2-bredde når der ER N3 (stor platform = god afsæt)
+    n2WithN3MaxW:    160,
     platformGapMin:  160,   // afstand mellem N2-platforme
     platformGapMax:  300,
     platformY:       158,   // N2 overfladeY (ikke skift uden at tjekke fysik)
@@ -128,8 +130,8 @@ const CONFIG = {
     platformY3:      82,    // N3 overfladeY (ikke nåbar direkte fra jord)
     n3MinW:          55,    // N3 platform-bredde
     n3MaxW:          95,
-    n3OffsetMin:     70,    // N3 starter ved højre halvdel af N2 (eller lidt forbi)
-    n3OffsetMax:     160,
+    n3GapMin:        20,    // luft mellem N2's højrekant og N3's venstrekant
+    n3GapMax:        60,
 
     //  Øl-chance falder med distancen:
     n3BeerStart:     0.35,  // startchance  (after første garanterede øl)
