@@ -1518,14 +1518,14 @@
   <script>
     // ── Cookie-banner ──
     (function() {
-      if (localStorage.getItem('cookieOK')) return;
+      if (localStorage.getItem('cookieOK2')) return;
       const banner = document.getElementById('cookieBanner');
       const btn    = document.getElementById('cookieAccept');
       if (!banner) return;
       setTimeout(() => banner.classList.add('show'), 800);
       btn.addEventListener('click', () => {
         banner.classList.remove('show');
-        localStorage.setItem('cookieOK', '1');
+        localStorage.setItem('cookieOK2', '1');
       });
     })();
 
