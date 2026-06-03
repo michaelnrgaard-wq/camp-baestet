@@ -633,7 +633,7 @@ document.addEventListener('keyup', e => {
 });
 
 const btnJumpEl = document.getElementById('btnJump');
-btnJumpEl.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(actx&&actx.state==='suspended')actx.resume(); doJump = true; jumpHeld = true; doLance = true; }, { passive:false });
+btnJumpEl.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(actx&&actx.state==='suspended')actx.resume(); handleTap(); doJump = true; jumpHeld = true; doLance = true; }, { passive:false });
 btnJumpEl.addEventListener('touchend',   e => { e.preventDefault(); jumpHeld = false; }, { passive:false });
 
 function handleNameKey(e) {
