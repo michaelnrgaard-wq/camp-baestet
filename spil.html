@@ -1217,45 +1217,106 @@ function drawOrangeStage() {
 }
 
 function _drawOrangeStage(cx, baseY, w, h) {
-  ctx.fillStyle = '#0f0c09';
+  const col = '#0e0b08';
+  const archR = h * 0.40;
+  const archCY = baseY - archR;
 
-  // Hoved-tag: karakteristisk buet/rundet Orange Stage-profil
+  // ── Belysningsmaster (langt til siderne, høje) ──
+  ctx.fillStyle = col;
+  const mw = w * 0.038, mh = h * 0.92;
+  ctx.fillRect(cx - w*0.64, baseY - mh, mw, mh);
+  ctx.fillRect(cx + w*0.60, baseY - mh, mw, mh);
+  // Lys-rigs (vandrette bjælker på masterne)
+  ctx.fillRect(cx - w*0.70, baseY - mh,       w*0.14, mw*0.7);
+  ctx.fillRect(cx - w*0.70, baseY - mh*0.60,  w*0.11, mw*0.5);
+  ctx.fillRect(cx + w*0.58, baseY - mh,       w*0.14, mw*0.7);
+  ctx.fillRect(cx + w*0.59, baseY - mh*0.60,  w*0.11, mw*0.5);
+
+  // ── Kabler fra master-toppe til scene-centrum ──
+  ctx.strokeStyle = 'rgba(80,55,30,0.65)';
+  ctx.lineWidth = 0.8;
+  [[cx - w*0.62, baseY - mh*0.98, cx - archR*0.5, archCY - archR*0.1],
+   [cx + w*0.62, baseY - mh*0.98, cx + archR*0.5, archCY - archR*0.1]
+  ].forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  });
+
+  // ── Venstre vinge ──
+  // Starter ved siden af sceneåbningen, svinger bredt ud og lidt opad
+  ctx.fillStyle = col;
   ctx.beginPath();
-  ctx.moveTo(cx - w*0.54, baseY);
-  ctx.lineTo(cx - w*0.54, baseY - h*0.22);
+  ctx.moveTo(cx - archR*0.97, baseY);
+  ctx.lineTo(cx - archR*0.97, archCY + archR*0.15);
   ctx.bezierCurveTo(
-    cx - w*0.54, baseY - h*0.58,
-    cx - w*0.12, baseY - h*0.88,
-    cx,          baseY - h
+    cx - w*0.22, archCY - h*0.08,  // svinger ud og lidt op
+    cx - w*0.46, baseY - h*0.78,   // toppunkt (vingen er bred og lav)
+    cx - w*0.52, baseY - h*0.68
   );
   ctx.bezierCurveTo(
-    cx + w*0.12, baseY - h*0.88,
-    cx + w*0.54, baseY - h*0.58,
-    cx + w*0.54, baseY - h*0.22
+    cx - w*0.56, baseY - h*0.50,
+    cx - w*0.54, baseY - h*0.18,
+    cx - w*0.48, baseY
   );
-  ctx.lineTo(cx + w*0.54, baseY);
   ctx.closePath();
   ctx.fill();
 
-  // Scenekasse i bunden med orange gløde
-  const sg = ctx.createLinearGradient(cx, baseY - h*0.26, cx, baseY);
-  sg.addColorStop(0, 'rgba(220,90,15,0.0)');
-  sg.addColorStop(1, 'rgba(255,110,20,0.22)');
-  ctx.fillStyle = sg;
-  ctx.fillRect(cx - w*0.36, baseY - h*0.28, w*0.72, h*0.28);
+  // ── Højre vinge (spejl) ──
+  ctx.beginPath();
+  ctx.moveTo(cx + archR*0.97, baseY);
+  ctx.lineTo(cx + archR*0.97, archCY + archR*0.15);
+  ctx.bezierCurveTo(
+    cx + w*0.22, archCY - h*0.08,
+    cx + w*0.46, baseY - h*0.78,
+    cx + w*0.52, baseY - h*0.68
+  );
+  ctx.bezierCurveTo(
+    cx + w*0.56, baseY - h*0.50,
+    cx + w*0.54, baseY - h*0.18,
+    cx + w*0.48, baseY
+  );
+  ctx.closePath();
+  ctx.fill();
 
-  // Belysningsmaster
-  ctx.fillStyle = '#0f0c09';
-  const mw = w * 0.05;
-  ctx.fillRect(cx - w*0.60, baseY - h*0.65, mw, h*0.65);
-  ctx.fillRect(cx + w*0.54, baseY - h*0.65, mw, h*0.65);
-  // Master-platform
-  ctx.fillRect(cx - w*0.65, baseY - h*0.66, w*0.15, h*0.035);
-  ctx.fillRect(cx + w*0.50, baseY - h*0.66, w*0.15, h*0.035);
+  // ── Scenekassen (rektangel under buen) ──
+  ctx.fillStyle = col;
+  ctx.fillRect(cx - archR*0.97, archCY, archR*1.94, archR + 2);
 
-  // Lille lys øverst på taget
-  ctx.fillStyle = 'rgba(255,180,60,0.55)';
-  ctx.beginPath(); ctx.arc(cx, baseY - h*1.0, 2, 0, 6.28); ctx.fill();
+  // ── Halvcirkel bue-åbning med orange gløde ──
+  const glo = ctx.createRadialGradient(cx, archCY + archR*0.3, 0, cx, archCY, archR*1.1);
+  glo.addColorStop(0,   'rgba(255,120,20,0.45)');
+  glo.addColorStop(0.5, 'rgba(220,80,10,0.20)');
+  glo.addColorStop(1,   'rgba(180,50,5,0)');
+  ctx.fillStyle = glo;
+  ctx.beginPath();
+  ctx.arc(cx, archCY, archR*0.92, Math.PI, 0);
+  ctx.lineTo(cx + archR*0.92, baseY);
+  ctx.lineTo(cx - archR*0.92, baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mørk bue-ramme udenom
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.arc(cx, archCY, archR,      Math.PI, 0);
+  ctx.arc(cx, archCY, archR*0.88, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.fill();
+  // Bund af bue-rammen
+  ctx.fillRect(cx - archR, archCY, archR*0.12, archR + 2);
+  ctx.fillRect(cx + archR*0.88, archCY, archR*0.12, archR + 2);
+
+  // ── Ring af scenelamper langs buen ──
+  for (let a = Math.PI; a <= 2*Math.PI; a += 0.20) {
+    const lx = cx + Math.cos(a) * archR * 0.94;
+    const ly = archCY + Math.sin(a) * archR * 0.94;
+    ctx.fillStyle = 'rgba(255,230,160,0.60)';
+    ctx.beginPath(); ctx.arc(lx, ly, 1.3, 0, 6.28); ctx.fill();
+  }
+
+  // ── Festival-banner under vinge-kanten ──
+  ctx.fillStyle = '#180e05';
+  ctx.fillRect(cx - archR*1.42, baseY - h*0.16, archR*0.88, h*0.050);
+  ctx.fillRect(cx + archR*0.54, baseY - h*0.16, archR*0.88, h*0.050);
 }
 
 // Folkemængde-silhuet med hænder i vejret
