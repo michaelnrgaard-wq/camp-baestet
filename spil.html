@@ -300,12 +300,17 @@ const CONFIG = {
     n2RingMax:         4,
     n2RingSpacing:     28,
 
-    // ── n3: hojt flyvende platforme (kun oel — kræver to hop) ──
-    platformY3:        82,   // n3 overflade Y (kun naabar fra n2)
-    n3MinW:            55,   // n3 bredde
+    // ── n3: hojt flyvende platforme (oel, kræver to hop) ──
+    platformY3:        82,
+    n3MinW:            55,
     n3MaxW:            95,
-    n3OffsetMin:       30,   // n3 starter X px efter n2-start (saa man lander paa n2 foerst)
+    n3OffsetMin:       30,
     n3OffsetMax:       90,
+
+    // Oel-sandsynlighed paa N3 — falder med distancen
+    n3BeerStart:       0.72,  // chance ved start (efter foerste garanterede oel)
+    n3BeerPer1000m:    0.12,  // reduktion pr. 1000 m
+    n3BeerMin:         0.14,  // bundgraense (spillet slutter ikke af at vaere umuligt)
 
     // Svaerhedsgrad
     difficultyDistance: 4000,
@@ -581,6 +586,7 @@ let platforms = [];         // flyvende blokke {x, y, w}
 let platformX = 0;          // spawn-markør for platforme
 let lastObstacle = false;
 let lastBeerSpawnX = 0;
+let firstBeerGiven = false;  // saa foerste N3 altid har oel
 let jumpBuffer = 0;
 let jumpHeld = false;       // er hop-tasten holdt nede?
 let jumpBoostFrames = 0;    // antal frames med boost givet
@@ -719,7 +725,7 @@ function resetAll() {
   player.onGround = true; player.animF = 0; player.animT = 0;
   entryName = '';
   items = []; particles = []; popups = []; platforms = [];
-  lastObstacle = false; jumpBuffer = 0; lastBeerSpawnX = 0;
+  lastObstacle = false; jumpBuffer = 0; lastBeerSpawnX = 0; firstBeerGiven = false;
   jumpHeld = false; jumpBoostFrames = 0;
   shake = 0; hitStop = 0; squash = 0; milestoneFlash = 0; nextMilestone = 100;
   ringPop = 0; comboPop = 0; combo = 0; ringScore = 0;
@@ -754,13 +760,21 @@ function spawnNextPlatform() {
                  y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
   }
 
-  // ── N3: spawner paired over/efter N2, KUN med oel ──
-  // Starter lidt inde paa N2 saa man lander paa N2 foerst og derefter hopper op
+  // ── N3: paired med N2, oel med faldende sandsynlighed ──
   const n3offset = g.n3OffsetMin + Math.random() * (g.n3OffsetMax - g.n3OffsetMin);
   const n3w = g.n3MinW + Math.random() * (g.n3MaxW - g.n3MinW);
   const n3x = platformX + n3offset;
   platforms.push({ x: n3x, y: PLATFORM_Y3, w: n3w, tier: 3 });
-  items.push({ type:'beer', x: n3x + n3w/2, y: PLATFORM_Y3 - 16, alive: true });
+
+  // Foerste N3 = garanteret oel (tutorial). Derefter faldende chance pr. 1000 m.
+  const meters = worldX / 10;
+  const beerChance = !firstBeerGiven ? 1
+    : Math.max(g.n3BeerMin, g.n3BeerStart - Math.floor(meters / 1000) * g.n3BeerPer1000m);
+
+  if (Math.random() < beerChance) {
+    items.push({ type:'beer', x: n3x + n3w/2, y: PLATFORM_Y3 - 16, alive: true });
+    firstBeerGiven = true;
+  }
 
   const gap = g.platformGapMin + Math.random() * (g.platformGapMax - g.platformGapMin);
   platformX += pw + gap;
