@@ -49,31 +49,18 @@
     .nav-mobile a { font-family:var(--blackletter); color:var(--text); text-decoration:none; font-size:1.1rem; }
     @media(max-width:700px){ nav{padding:0 1.2rem;} .nav-links,.nav-socials{display:none;} .nav-hamburger{display:flex;} }
 
-    /* ── Desktop: portræt-spil centreret ── */
-    .game-wrapper {
-      margin-top: 68px;
-      min-height: calc(100vh - 68px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem 1rem 3rem;
-      gap: 1rem;
-    }
-    .game-title { font-family:var(--blackletter); font-size:2rem; color:var(--gold); text-align:center; text-shadow:0 0 30px rgba(201,168,76,.5); letter-spacing:.06em; }
-    .game-subtitle { color:var(--muted); text-align:center; font-size:.85rem; letter-spacing:.05em; }
+    /* ── Desktop: landscape-spil centreret (480×270, originalt layout) ── */
+    .game-wrapper { margin-top:68px; min-height:calc(100vh - 68px); display:flex; flex-direction:column; align-items:center; padding:2.5rem 1rem 5rem; }
+    .game-title { font-family:var(--blackletter); font-size:clamp(1.6rem,4vw,2.8rem); color:var(--gold); text-align:center; margin-bottom:.4rem; text-shadow:0 0 30px rgba(201,168,76,.5); letter-spacing:.06em; }
+    .game-subtitle { color:var(--muted); text-align:center; font-size:.9rem; margin-bottom:1.8rem; letter-spacing:.05em; }
 
     .canvas-wrap {
-      position: relative;
-      /* Portræt-ratio 270:480 = 9:16. Skaler efter højde, maks 400px bred. */
-      height: min(calc(100vh - 220px), 640px);
-      width: auto;
-      aspect-ratio: 270 / 480;
+      position: relative; width: 100%; max-width: 960px;
       border: 1px solid rgba(201,168,76,.3);
-      box-shadow: 0 0 60px rgba(0,0,0,.95), 0 0 100px rgba(201,168,76,.07);
+      box-shadow: 0 0 80px rgba(0,0,0,.95), 0 0 120px rgba(201,168,76,.08);
     }
     #gameCanvas {
-      display: block; width: 100%; height: 100%;
+      display: block; width: 100%; height: auto;
       image-rendering: pixelated; image-rendering: crisp-edges;
     }
 
@@ -199,7 +186,7 @@
   <p class="game-subtitle">Saml ringe — drik øl — overlev så længe du kan</p>
 
   <div class="canvas-wrap">
-    <canvas id="gameCanvas" width="270" height="480"></canvas>
+    <canvas id="gameCanvas" width="480" height="270"></canvas>
     <!-- Touch-zoner -->
     <div class="touch-overlay">
       <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP" style="width:100%"></div>
@@ -264,7 +251,12 @@ const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-const VW = 270, VH = 480;
+// isMobile er defineret i config.js (loades foerst)
+const VW = isMobile ? 270 : 480;
+const VH = isMobile ? 480 : 270;
+// Sæt canvas-dimensioner baseret på device
+canvas.width  = VW;
+canvas.height = VH;
 
 // CONFIG er nu i config.js — indlæses via <script> i <head>
 
@@ -282,28 +274,27 @@ function rnd(min, max) {
 // ── Fysik- og layout-konstanter ────────────────────────
 // Portræt-canvas: VW=270, VH=480
 const GRAVITY        = 0.38;
-const PLATFORM_H     = 8;
-const PLATFORM_Y3    = CONFIG.gen.platformY3;  // = 220
-const PLAYER_SX      = 52;     // spiller x (fast skærm-position)
-const GROUND_Y       = 390;    // jordbane-overflade Y (81% fra top)
-const PW             = 14;     // spiller hitbox bredde
-const PH             = 20;     // spiller hitbox højde
-const LANCE_OX       = 28;
-const LANCE_OY       = 8;
+const PLATFORM_H     = isMobile ? 8  : 10;
+const PLATFORM_Y3    = CONFIG.gen.platformY3;
+const PLAYER_SX      = isMobile ? 52  : 92;
+const GROUND_Y       = isMobile ? 390 : 222;
+const PW             = isMobile ? 14  : 20;
+const PH             = isMobile ? 20  : 28;
+const LANCE_OX       = isMobile ? 28  : 36;
+const LANCE_OY       = isMobile ? 8   : 10;
 const LANCE_DUR      = 15;
 const JUMP_BUFFER    = 7;
 
-const TENT_W      = 34;
-const RING_R      = 7;
-const RING_LOW_Y  = GROUND_Y - 22;   // = 368  (lav ring, rides igennem)
-const RING_HIGH_Y = GROUND_Y - 55;   // = 335  (høj ring, kræver hop)
+const TENT_W         = isMobile ? 34  : 36;
+const RING_R         = isMobile ? 7   : 8;
+const RING_LOW_Y     = isMobile ? GROUND_Y - 22 : GROUND_Y - 26;
+const RING_HIGH_Y    = isMobile ? GROUND_Y - 55 : GROUND_Y - 66;
 
-// To telt-typer
-const TENT_H_SMALL     = 32;
+const TENT_H_SMALL     = isMobile ? 32 : 34;
 const TENT_H_TALL      = 46;
-const TENT_HIT_H_SMALL = 20;   // clearas med lille hop  (player.y <= 352)
-const TENT_HIT_H_TALL  = 52;   // kræver fuldt hop       (player.y <= 320)
-const TENT_HIT_W       = 20;
+const TENT_HIT_H_SMALL = 20;
+const TENT_HIT_H_TALL  = isMobile ? 52 : 38;
+const TENT_HIT_W       = isMobile ? 20 : 22;
 
 const RING_VALUE       = 18;
 const SPEED_BONUS_THRESHOLD = CONFIG.startSpeed + 0.30 * (CONFIG.maxSpeed - CONFIG.startSpeed);
@@ -387,11 +378,13 @@ const SPRITE_DEFS = {
 };
 
 // Spil-stoerrelser (kan finjusteres her)
-const PLAYER_GH = 40, PLAYER_OX = -10, PLAYER_OY = -12;
-const RING_GH   = 24;
-const BEER_GH   = 26;
-const TENT_GW   = 34;
-const TORCH_GH  = 24;
+const PLAYER_GH = isMobile ? 40  : 46;
+const PLAYER_OX = isMobile ? -10 : -12;
+const PLAYER_OY = isMobile ? -12 : -14;
+const RING_GH   = isMobile ? 24  : 28;
+const BEER_GH   = isMobile ? 26  : 30;
+const TENT_GW   = isMobile ? 34  : 38;
+const TORCH_GH  = isMobile ? 24  : 28;
 
 const SPR = {};
 function loadSprites() {
@@ -991,27 +984,28 @@ function drawStars() {
 }
 
 function drawMoon() {
-  const mx = ((220 - worldX*0.015) % (VW+200) + VW+200) % (VW+200);
-  const my = 80;
-  if (bgReady && BG.moon) { ctx.drawImage(BG.moon.cv, (mx - BG.moon.w/2)|0, (my - BG.moon.h/2)|0); return; }
+  const mx = ((isMobile ? 220 : 360) - worldX*0.015) % (VW+200);
+  const mxFixed = (mx + VW + 200) % (VW + 200);
+  const my = isMobile ? 80 : 38;
+  if (bgReady && BG.moon) { ctx.drawImage(BG.moon.cv, (mxFixed - BG.moon.w/2)|0, (my - BG.moon.h/2)|0); return; }
   // Glow
-  const gl = ctx.createRadialGradient(mx,my,0,mx,my,36);
+  const gl = ctx.createRadialGradient(mxFixed,my,0,mxFixed,my,36);
   gl.addColorStop(0,'rgba(220,195,120,0.18)');
   gl.addColorStop(1,'rgba(220,195,120,0)');
-  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx,my,36,0,6.28); ctx.fill();
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mxFixed,my,36,0,6.28); ctx.fill();
   // Maane
-  ctx.fillStyle = '#ddd08a'; ctx.beginPath(); ctx.arc(mx,my,18,0,6.28); ctx.fill();
-  ctx.fillStyle = '#d8c870'; ctx.beginPath(); ctx.arc(mx-3,my-2,14,0,6.28); ctx.fill();
+  ctx.fillStyle = '#ddd08a'; ctx.beginPath(); ctx.arc(mxFixed,my,18,0,6.28); ctx.fill();
+  ctx.fillStyle = '#d8c870'; ctx.beginPath(); ctx.arc(mxFixed-3,my-2,14,0,6.28); ctx.fill();
   // Halvmaane-skygge
-  ctx.fillStyle = C.skyMid; ctx.beginPath(); ctx.arc(mx+8,my-3,15,0,6.28); ctx.fill();
+  ctx.fillStyle = C.skyMid; ctx.beginPath(); ctx.arc(mxFixed+8,my-3,15,0,6.28); ctx.fill();
   // Kratere
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath(); ctx.arc(mx-4,my+3,3,0,6.28); ctx.fill();
-  ctx.beginPath(); ctx.arc(mx-8,my-4,2,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.arc(mxFixed-4,my+3,3,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.arc(mxFixed-8,my-4,2,0,6.28); ctx.fill();
 }
 
 function drawCastle() {
-  if (bgReady && BG.castle) { bgTile(BG.castle, 0.10, 360); return; }
+  if (bgReady && BG.castle) { bgTile(BG.castle, 0.10, isMobile ? 360 : 226); return; }
   // Slotsiluet - parallax 0.07x
   const off = (-(worldX*0.07)) % (VW*2.2);
   for (let repeat = 0; repeat < 3; repeat++) {
@@ -1021,7 +1015,7 @@ function drawCastle() {
 }
 
 function drawCastleAt(bx) {
-  const by = 220;  // sænket pga. portræt-canvas (GROUND_Y=390)
+  const by = isMobile ? 220 : 100;
   ctx.fillStyle = C.castle;
 
   // Mur
