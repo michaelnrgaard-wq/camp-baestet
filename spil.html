@@ -189,8 +189,8 @@
 </div>
 
 <div class="game-wrapper">
-  <h1 class="game-title">Ringridning paa Cykel</h1>
-  <p class="game-subtitle">Saml ringe — drik oel — overlev saa laenge du kan</p>
+  <h1 class="game-title">Ringridning på Cykel</h1>
+  <p class="game-subtitle">Saml ringe — drik øl — overlev så længe du kan</p>
 
   <div class="canvas-wrap">
     <canvas id="gameCanvas" width="480" height="270"></canvas>
@@ -544,7 +544,7 @@ let nextMilestone = 100;  // naeste 100 m-milepael
 let ringPop = 0, comboPop = 0; // "pop"-skalering paa HUD-tal
 
 // Combo
-let combo = 0;            // ringe i traek uden at misse
+let combo = 0;            // ringe i træk uden at misse
 let ringScore = 0;        // akkumuleret ring-score (med multiplier)
 
 // Input-tilstand
@@ -1654,13 +1654,13 @@ function drawStart() {
   ctx.strokeRect(VW/2-106, VH/2-62, 212, 124);
 
   cText('RINGRIDNING', VW/2, VH/2-44, 'bold 18px monospace', C.goldHi);
-  cText('PAA CYKEL', VW/2, VH/2-29, 'bold 10px monospace', C.gold);
+  cText('PÅ CYKEL', VW/2, VH/2-29, 'bold 10px monospace', C.gold);
   hline(VH/2-22, 160);
 
   ctx.font = '7px monospace'; ctx.fillStyle = C.white; ctx.textAlign = 'center';
   ctx.fillText('HOP over telte  -  DUK under ravne', VW/2, VH/2-11);
-  ctx.fillText('Rid igennem ringe i traek = COMBO', VW/2, VH/2+1);
-  ctx.fillText('Drik oel for at holde liv', VW/2, VH/2+13);
+  ctx.fillText('Rid igennem ringe i træk = COMBO', VW/2, VH/2+1);
+  ctx.fillText('Drik øl for at holde liv', VW/2, VH/2+13);
   ctx.fillText('W/Pil op = hop   S/Pil ned = duk', VW/2, VH/2+27);
 
   hline(VH/2+38, 160);
@@ -1684,14 +1684,14 @@ function drawDead() {
   cText('SCORE: ' + finalScore, VW/2, VH/2+2, 'bold 11px monospace', C.goldHi);
   hline(VH/2+9, 180);
 
-  if ((tick>>4)&1) cText('TRYK FOR AT FORSAETTE', VW/2, VH/2+24, '7px monospace', C.white);
+  if ((tick>>4)&1) cText('TRYK FOR AT FORTSÆTTE', VW/2, VH/2+24, '7px monospace', C.white);
 }
 
 function drawPause() {
   overlay(0.68);
   cText('PAUSE', VW/2, VH/2-8, 'bold 16px monospace', C.gold);
   hline(VH/2, 120);
-  cText('ESC for at fortsaette', VW/2, VH/2+14, '7px monospace', C.uiText);
+  cText('ESC for at fortsætte', VW/2, VH/2+14, '7px monospace', C.uiText);
 }
 
 function drawEntry() {
@@ -1700,7 +1700,7 @@ function drawEntry() {
   ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
   ctx.strokeRect(VW/2-120, VH/2-58, 240, 116);
 
-  cText('TILFOEJ TIL HIGHSCORE', VW/2, VH/2-42, 'bold 9px monospace', C.gold);
+  cText('TILFØJ TIL HIGHSCORE', VW/2, VH/2-42, 'bold 9px monospace', C.gold);
   cText('Score: ' + finalScore, VW/2, VH/2-28, 'bold 14px monospace', C.goldHi);
   hline(VH/2-20, 200);
 
@@ -1828,7 +1828,7 @@ const sbReady = !SUPABASE_URL.includes('DIT_PROJEKT');
 async function fetchScores() {
   const el = document.getElementById('scoresContainer');
   if (!sbReady) {
-    el.innerHTML = '<p class="scores-note">Highscore-listen vises naar Supabase er sat op.</p>';
+    el.innerHTML = '<p class="scores-note">Highscore-listen vises når Supabase er sat op.</p>';
     return;
   }
   try {
@@ -1837,7 +1837,7 @@ async function fetchScores() {
     });
     const data = await r.json();
     if (!Array.isArray(data)||!data.length) {
-      el.innerHTML = '<p class="scores-note">Ingen scores endnu — vaar den foerste!</p>'; return;
+      el.innerHTML = '<p class="scores-note">Ingen scores endnu — vær den første!</p>'; return;
     }
     const M = ['1.','2.','3.'];
     let h = '<table class="scores-table"><thead><tr><th>#</th><th>Navn</th><th>Score</th><th>Ringe</th><th>Distance</th></tr></thead><tbody>';
