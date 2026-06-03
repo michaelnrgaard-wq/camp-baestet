@@ -200,9 +200,22 @@
 
   <div class="canvas-wrap">
     <canvas id="gameCanvas" width="270" height="480"></canvas>
-    <!-- Touch-zoner overlaid paa canvasset (kun synlige paa mobil) -->
+    <!-- Touch-zoner -->
     <div class="touch-overlay">
       <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP" style="width:100%"></div>
+    </div>
+    <!-- Navn-input til highscore (mobil: åbner tastatur) -->
+    <div id="nameOverlay" style="display:none; position:absolute; inset:0; background:rgba(6,4,10,0.88); z-index:20; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
+      <div style="font-family:var(--blackletter); color:var(--gold); font-size:1.1rem; letter-spacing:0.05em; text-shadow:0 0 16px rgba(201,168,76,0.5);">TILFØJ TIL HIGHSCORE</div>
+      <div id="nameOverlayScore" style="font-family:monospace; color:#f0d060; font-size:1.4rem;"></div>
+      <input id="nameField" type="text" maxlength="12" placeholder="DIT NAVN"
+        autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+        style="background:rgba(20,15,8,0.95); border:1px solid #c9a84c; color:#f0d060;
+               font-family:monospace; font-size:18px; padding:10px 16px; text-align:center;
+               text-transform:uppercase; outline:none; -webkit-appearance:none;
+               border-radius:2px; width:200px; letter-spacing:0.08em;">
+      <button onclick="submitFromOverlay()" style="background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.5); color:var(--gold); font-family:var(--blackletter); font-size:1rem; padding:10px 28px; border-radius:2px; cursor:pointer; letter-spacing:0.05em;">GEM SCORE</button>
+      <div onclick="skipOverlay()" style="color:rgba(201,168,76,0.4); font-size:0.8rem; cursor:pointer; margin-top:-4px;">spring over</div>
     </div>
   </div>
 
@@ -1905,7 +1918,35 @@ canvas.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if
 function handleTap() {
   initAudio(); if(actx&&actx.state==='suspended')actx.resume();
   if (gState === 'start') { resetAll(); gState = 'playing'; }
-  else if (gState === 'dead') { gState = 'entry'; }
+  else if (gState === 'dead') {
+    gState = 'entry';
+    // Mobil: vis HTML-input der åbner tastaturet
+    if (window.innerWidth <= 480) showNameOverlay();
+  }
+}
+
+function showNameOverlay() {
+  const ov = document.getElementById('nameOverlay');
+  const fld = document.getElementById('nameField');
+  document.getElementById('nameOverlayScore').textContent = 'Score: ' + finalScore;
+  ov.style.display = 'flex';
+  fld.value = '';
+  setTimeout(() => fld.focus(), 80);
+  // Enter i inputfeltet gemmer score
+  fld.onkeydown = e => { if (e.key === 'Enter') submitFromOverlay(); };
+}
+
+function submitFromOverlay() {
+  const fld = document.getElementById('nameField');
+  entryName = (fld.value || '').toUpperCase().slice(0, 12) || 'ANONYM';
+  document.getElementById('nameOverlay').style.display = 'none';
+  submitScore();
+}
+
+function skipOverlay() {
+  entryName = 'ANONYM';
+  document.getElementById('nameOverlay').style.display = 'none';
+  gState = 'start'; resetAll();
 }
 
 window.addEventListener('scroll', () => {
