@@ -1107,6 +1107,232 @@ function drawTree(x, y) {
   ctx.fillRect(x-2, y-8, 4, 10);
 }
 
+// ════════════════════════════════════════════════════════
+//  ROSKILDE FESTIVAL NATSCENE
+//  Alle koordinater er relative til GROUND_Y og VW/VH saa
+//  de skalerer korrekt paa baade desktop (480×270) og
+//  mobil-portræt (270×480).
+// ════════════════════════════════════════════════════════
+function drawFestivalScene() {
+  drawHorizonGlow();
+  drawDistantScaffolding();
+  drawSpotlights();
+  drawOrangeStage();
+  drawCrowd();
+  drawFestivalFlags();
+}
+
+// Varm orange himmelgløde fra scenelyset
+function drawHorizonGlow() {
+  const hy = GROUND_Y - Math.round(VH * 0.12);
+
+  // Bred atmosfærisk gløde
+  const g = ctx.createLinearGradient(0, hy - VH*0.45, 0, hy + VH*0.06);
+  g.addColorStop(0,    'rgba(160,50,5,0)');
+  g.addColorStop(0.4,  'rgba(190,70,8,0.10)');
+  g.addColorStop(0.72, 'rgba(220,95,15,0.26)');
+  g.addColorStop(1,    'rgba(245,120,20,0.48)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, hy - VH*0.45, VW, VH*0.51);
+
+  // Varmere hot-spots ved scenepositioner
+  const offH = ((worldX * 0.04) % (VW * 2) + VW * 2) % (VW * 2);
+  [VW*0.18, VW*0.52, VW*0.80].forEach(baseX => {
+    for (let rep = -1; rep <= 1; rep++) {
+      const cx = baseX - offH + rep * VW * 2;
+      const r  = ctx.createRadialGradient(cx, hy, 0, cx, hy, VW * 0.30);
+      r.addColorStop(0, 'rgba(255,130,20,0.28)');
+      r.addColorStop(1, 'rgba(255,130,20,0)');
+      ctx.fillStyle = r;
+      ctx.fillRect(0, hy - VH*0.45, VW, VH*0.51);
+    }
+  });
+}
+
+// Fjerne stilladser og scene-kasser
+function drawDistantScaffolding() {
+  const baseY  = GROUND_Y - Math.round(VH * 0.04);
+  const span   = VW * 3.2;
+  const offS   = ((worldX * 0.06) % span + span) % span;
+  const structs = [
+    {x:0.07, h:0.22, w:0.014}, {x:0.18, h:0.16, w:0.011},
+    {x:0.32, h:0.26, w:0.018}, {x:0.48, h:0.19, w:0.012},
+    {x:0.61, h:0.21, w:0.014}, {x:0.75, h:0.28, w:0.020},
+    {x:0.89, h:0.17, w:0.011},
+  ];
+  ctx.fillStyle = '#0c0907';
+  for (let rep = -1; rep <= 1; rep++) {
+    structs.forEach(s => {
+      const sx = s.x * span - offS + rep * span;
+      const sh = s.h * VH, sw = s.w * VW;
+      ctx.fillRect(sx - sw/2, baseY - sh, sw, sh);
+      ctx.fillRect(sx - sw*1.6, baseY - sh - sw*0.4, sw*3.2, sw*0.6);
+    });
+  }
+}
+
+// Lyskegler skyder op fra sceneområdet
+function drawSpotlights() {
+  const baseY = GROUND_Y - Math.round(VH * 0.06);
+  const span  = VW * 2.8;
+  const offL  = ((worldX * 0.09) % span + span) % span;
+  const beams = [
+    {x:0.12, a:-0.22, l:0.52}, {x:0.26, a: 0.12, l:0.42},
+    {x:0.45, a:-0.07, l:0.48}, {x:0.63, a: 0.25, l:0.44},
+    {x:0.78, a:-0.18, l:0.54},
+  ];
+  beams.forEach(b => {
+    for (let rep = -1; rep <= 1; rep++) {
+      const bx  = b.x * span - offL + rep * span;
+      const len = b.l * VH;
+      const tx  = bx + Math.sin(b.a) * len;
+      const ty  = baseY - len;
+      const gr  = ctx.createLinearGradient(bx, baseY, tx, ty);
+      gr.addColorStop(0, 'rgba(255,200,100,0.16)');
+      gr.addColorStop(1, 'rgba(255,200,100,0)');
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      const hw = VW * 0.025;
+      ctx.moveTo(bx - hw*0.3, baseY);
+      ctx.lineTo(bx + hw*0.3, baseY);
+      ctx.lineTo(tx + hw, ty);
+      ctx.lineTo(tx - hw, ty);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
+// Det ikoniske Orange Stage — buet teltag, belysningsmaster
+function drawOrangeStage() {
+  const span  = VW * 2.2;
+  const offO  = ((worldX * 0.10) % span + span) % span;
+  const baseY = GROUND_Y - Math.round(VH * 0.04);
+  const sw    = VW * 0.52, sh = VH * 0.40;
+
+  for (let rep = -1; rep <= 1; rep++) {
+    const cx = span * 0.5 - offO + rep * span;
+    _drawOrangeStage(cx, baseY, sw, sh);
+  }
+}
+
+function _drawOrangeStage(cx, baseY, w, h) {
+  ctx.fillStyle = '#0f0c09';
+
+  // Hoved-tag: karakteristisk buet/rundet Orange Stage-profil
+  ctx.beginPath();
+  ctx.moveTo(cx - w*0.54, baseY);
+  ctx.lineTo(cx - w*0.54, baseY - h*0.22);
+  ctx.bezierCurveTo(
+    cx - w*0.54, baseY - h*0.58,
+    cx - w*0.12, baseY - h*0.88,
+    cx,          baseY - h
+  );
+  ctx.bezierCurveTo(
+    cx + w*0.12, baseY - h*0.88,
+    cx + w*0.54, baseY - h*0.58,
+    cx + w*0.54, baseY - h*0.22
+  );
+  ctx.lineTo(cx + w*0.54, baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Scenekasse i bunden med orange gløde
+  const sg = ctx.createLinearGradient(cx, baseY - h*0.26, cx, baseY);
+  sg.addColorStop(0, 'rgba(220,90,15,0.0)');
+  sg.addColorStop(1, 'rgba(255,110,20,0.22)');
+  ctx.fillStyle = sg;
+  ctx.fillRect(cx - w*0.36, baseY - h*0.28, w*0.72, h*0.28);
+
+  // Belysningsmaster
+  ctx.fillStyle = '#0f0c09';
+  const mw = w * 0.05;
+  ctx.fillRect(cx - w*0.60, baseY - h*0.65, mw, h*0.65);
+  ctx.fillRect(cx + w*0.54, baseY - h*0.65, mw, h*0.65);
+  // Master-platform
+  ctx.fillRect(cx - w*0.65, baseY - h*0.66, w*0.15, h*0.035);
+  ctx.fillRect(cx + w*0.50, baseY - h*0.66, w*0.15, h*0.035);
+
+  // Lille lys øverst på taget
+  ctx.fillStyle = 'rgba(255,180,60,0.55)';
+  ctx.beginPath(); ctx.arc(cx, baseY - h*1.0, 2, 0, 6.28); ctx.fill();
+}
+
+// Folkemængde-silhuet med hænder i vejret
+function drawCrowd() {
+  const span  = VW * 1.8;
+  const offC  = ((worldX * 0.28) % span + span) % span;
+  const baseY = GROUND_Y - Math.round(VH * 0.02);
+  const ch    = VH * 0.086;
+  const col   = '#09060a';
+
+  for (let rep = -1; rep <= 1; rep++) {
+    const ox = -offC + rep * span;
+
+    // Folkemasse-silhuet
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(ox, baseY);
+    for (let x = 0; x <= span + 4; x += 5) {
+      const n = Math.sin(x*0.19)*5 + Math.sin(x*0.07)*4 + Math.sin(x*0.38)*3;
+      ctx.lineTo(ox + x, baseY - ch + n);
+    }
+    ctx.lineTo(ox + span, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Hænder i vejret
+    ctx.fillStyle = col;
+    for (let i = 12; i < span; i += 38 + (i % 22)) {
+      if (Math.sin(i * 0.77 + 1.2) > 0.25) {
+        const ny = baseY - ch + Math.sin(i*0.19)*5 + Math.sin(i*0.07)*4;
+        const armH = ch * 0.60;
+        ctx.fillRect(ox + i - 1, ny - armH, 2, armH);
+        ctx.beginPath(); ctx.arc(ox + i, ny - armH - 2.5, 3, 0, 6.28); ctx.fill();
+      }
+    }
+  }
+}
+
+// Festival-flag (orange og guld) på stænger
+function drawFestivalFlags() {
+  const span  = VW * 1.6;
+  const offF  = ((worldX * 0.42) % span + span) % span;
+  const flagPositions = [
+    {rx:0.06, ph:0.14, fc:'#c85010'},
+    {rx:0.18, ph:0.12, fc:'#c9a84c'},
+    {rx:0.30, ph:0.15, fc:'#c85010'},
+    {rx:0.44, ph:0.11, fc:'#c9a84c'},
+    {rx:0.58, ph:0.13, fc:'#c85010'},
+    {rx:0.72, ph:0.12, fc:'#c9a84c'},
+    {rx:0.86, ph:0.14, fc:'#c85010'},
+  ];
+
+  flagPositions.forEach(f => {
+    for (let rep = -1; rep <= 1; rep++) {
+      const fx  = f.rx * span - offF + rep * span;
+      const fy  = GROUND_Y - Math.round(VH * 0.03);
+      const ph  = f.ph * VH;
+      const fw  = VW * 0.048, fh = VH * 0.036;
+
+      // Stang
+      ctx.fillStyle = '#2a1a08';
+      ctx.fillRect(fx - 1, fy - ph, 2, ph);
+
+      // Flag (blafrende)
+      const wave = Math.sin(tick * 0.05 + f.rx * 12) * 2.5;
+      ctx.fillStyle = f.fc;
+      ctx.beginPath();
+      ctx.moveTo(fx + 1, fy - ph);
+      ctx.lineTo(fx + fw + wave, fy - ph + fh*0.35);
+      ctx.lineTo(fx + fw*0.85 + wave*0.6, fy - ph + fh*0.72);
+      ctx.lineTo(fx + 1, fy - ph + fh);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
 // ── Flyvende platform-tegning ────────────────────────────
 function drawFloatingPlatform(pl) {
   const sx = (pl.x - worldX) | 0;
@@ -1728,8 +1954,7 @@ function draw() {
 
   drawStars();
   drawMoon();
-  drawCastle();
-  drawHills();
+  drawFestivalScene();
   drawGround();
   for (const pl of platforms) drawFloatingPlatform(pl);
 
