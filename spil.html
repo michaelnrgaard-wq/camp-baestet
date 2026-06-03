@@ -173,8 +173,7 @@
   <div class="touch-controls"></div>
 
   <div class="controls-hint">
-    <span class="hint-item"><span class="kbd">W</span> / <span class="kbd">Pil op</span> / <span class="kbd">Space</span> Hop</span>
-    <span class="hint-item">Kort hop = over lille telt  •  Langt hop = over højt telt</span>
+    <span class="hint-item"><span class="kbd">Space</span> Hop  (kort = lille, hold = stort)</span>
     <span class="hint-item">Rid igennem ringe for at samle dem</span>
     <span class="hint-item"><span class="kbd">M</span> Lyd</span>
     <span class="hint-item"><span class="kbd">Esc</span> Pause</span>
@@ -252,9 +251,9 @@ const RING_HIGH_Y = GROUND_Y - 66;  // haevet ring (kraever hop)
 
 // To telt-typer: lille (lille hop) og hoejt (kraever fuldt hop)
 const TENT_H_SMALL     = 34;   // visuelt lille telt
-const TENT_H_TALL      = 62;   // visuelt hoejt telt
-const TENT_HIT_H_SMALL = 20;   // hitbox-hoejde lille — clearas med lille hop (player.y <= 176)
-const TENT_HIT_H_TALL  = 52;   // hitbox-hoejde hoejt  — kraever fuldt hop (player.y <= 144)
+const TENT_H_TALL      = 46;   // visuelt hoejt telt (lidt laengere end lille)
+const TENT_HIT_H_SMALL = 20;   // hitbox lille — clearas med lille hop (player.y <= 176)
+const TENT_HIT_H_TALL  = 38;   // hitbox hoejt  — kraever fuldt hop (player.y <= 158)
 const RING_VALUE = 18;              // grundpoint pr. ring (ganges med combo-multiplier)
 
 // Afledte aliasser fra CONFIG (saa resten af koden kan bruge dem direkte)
@@ -595,9 +594,14 @@ document.addEventListener('keydown', e => {
   if (actx && actx.state === 'suspended') actx.resume();
   if (keys[e.code]) return;
   keys[e.code] = true;
-  if (['Space','ArrowUp'].includes(e.code)) e.preventDefault();
-  if (['ArrowUp','KeyW'].includes(e.code)) { doJump = true; jumpHeld = true; }
-  if (['Space','KeyX'].includes(e.code)) { doJump = true; jumpHeld = true; doLance = true; }
+  if (e.code === 'Space') e.preventDefault();
+  // Space starter/genstarter spillet fra alle skaerme
+  if (e.code === 'Space') {
+    if (gState === 'start' || gState === 'dead') { handleTap(); return; }
+    if (gState === 'paused') { gState = 'playing'; return; }
+  }
+  // Kun Space = hop (ingen W eller pil-op)
+  if (e.code === 'Space') { doJump = true; jumpHeld = true; doLance = true; }
   if (e.code === 'KeyM') muted = !muted;
   if (e.code === 'Escape') {
     if (gState === 'playing') gState = 'paused';
@@ -608,7 +612,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => {
   keys[e.code] = false;
-  if (['ArrowUp','KeyW','Space','KeyX'].includes(e.code)) jumpHeld = false;
+  if (e.code === 'Space') jumpHeld = false;
 });
 
 const btnJumpEl = document.getElementById('btnJump');
@@ -725,9 +729,16 @@ function spawnNext() {
     extraGap = g.gapAfterTent;
     lastObstacle = true;
   } else {
-    items.push({ type:'tent_tall', x:spawnX, y:GROUND_Y - TENT_H_TALL, w:TENT_W, h:TENT_H_TALL, alive:true });
-    extraGap = g.gapAfterTent;
-    lastObstacle = true;
+    // Spawn ikke hoejt telt under en N2-platform
+    const underN2 = platforms.some(pl => pl.tier === 2 &&
+      spawnX + TENT_W > pl.x && spawnX < pl.x + pl.w);
+    if (underN2) {
+      spawnRingGroup(); lastObstacle = false;
+    } else {
+      items.push({ type:'tent_tall', x:spawnX, y:GROUND_Y - TENT_H_TALL, w:TENT_W, h:TENT_H_TALL, alive:true });
+      extraGap = g.gapAfterTent;
+      lastObstacle = true;
+    }
   }
 
   const gap = rnd(g.minGap, g.maxGap) * tighten + extraGap;
@@ -1608,10 +1619,10 @@ function drawStart() {
   hline(VH/2-22, 160);
 
   ctx.font = '7px monospace'; ctx.fillStyle = C.white; ctx.textAlign = 'center';
-  ctx.fillText('Kort hop = over lille telt', VW/2, VH/2-11);
-  ctx.fillText('Hold hop = over højt telt', VW/2, VH/2-1);
-  ctx.fillText('Rid igennem ringe i træk = COMBO', VW/2, VH/2+11);
-  ctx.fillText('Drik øl for at holde liv', VW/2, VH/2+23);
+  ctx.fillText('SPACE  —  hop', VW/2, VH/2-11);
+  ctx.fillText('Hold SPACE = højt hop (over store telte)', VW/2, VH/2-1);
+  ctx.fillText('Ringe i træk = COMBO', VW/2, VH/2+11);
+  ctx.fillText('Øl på høje platforme holder dig i live', VW/2, VH/2+23);
 
   hline(VH/2+38, 160);
 
@@ -1634,7 +1645,7 @@ function drawDead() {
   cText('SCORE: ' + finalScore, VW/2, VH/2+2, 'bold 11px monospace', C.goldHi);
   hline(VH/2+9, 180);
 
-  if ((tick>>4)&1) cText('TRYK FOR AT FORTSÆTTE', VW/2, VH/2+24, '7px monospace', C.white);
+  if ((tick>>4)&1) cText('TRYK SPACE FOR AT FORSÆTTE', VW/2, VH/2+24, '7px monospace', C.white);
 }
 
 function drawPause() {
@@ -1739,52 +1750,51 @@ function drawTentTall(x, y, w, h) {
   x = x|0; y = y|0;
 
   // Skygge
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(x+w/2, y+h+2, w*0.55, 3, 0, 0, 6.28);
-  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(x+2, y+h, w, 3);
 
-  // Telt-krop — moerkere roed end lille telt (farlig!)
-  const tg = ctx.createLinearGradient(x, y, x+w, y+h);
-  tg.addColorStop(0, '#aa1a1a'); tg.addColorStop(0.5, '#701010'); tg.addColorStop(1, '#2a0808');
+  // Firkantet krop (nedre 60%)
+  const roofH = h * 0.38 | 0;
+  const bodyY = y + roofH;
+  const bodyH = h - roofH;
+
+  const bg = ctx.createLinearGradient(x, bodyY, x+w, bodyY);
+  bg.addColorStop(0, '#1a2a3a'); bg.addColorStop(1, '#0d1a28');
+  ctx.fillStyle = bg;
+  ctx.fillRect(x, bodyY, w, bodyH);
+
+  // Highlight-linje langs venstre side
+  ctx.fillStyle = '#2a4060';
+  ctx.fillRect(x, bodyY, 2, bodyH);
+
+  // Indgang (mørk rektangel centreret)
+  ctx.fillStyle = '#060e18';
+  ctx.fillRect(x+w/2-5, bodyY + bodyH*0.3, 10, bodyH*0.7);
+
+  // Trekant-tag
+  const tg = ctx.createLinearGradient(x, y, x+w, bodyY);
+  tg.addColorStop(0, '#243850'); tg.addColorStop(1, '#152232');
   ctx.fillStyle = tg;
   ctx.beginPath();
   ctx.moveTo(x+w/2, y);
-  ctx.lineTo(x+w, y+h);
-  ctx.lineTo(x, y+h);
+  ctx.lineTo(x+w, bodyY);
+  ctx.lineTo(x, bodyY);
   ctx.closePath(); ctx.fill();
 
-  // Midter-stribe
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.beginPath();
-  ctx.moveTo(x+w/2, y+4); ctx.lineTo(x+w/2+6, y+h); ctx.lineTo(x+w/2-6, y+h);
-  ctx.closePath(); ctx.fill();
+  // Tag-kant
+  ctx.fillStyle = '#3a5878';
+  ctx.fillRect(x, bodyY-1, w, 2);
 
-  // Indgang (mørk trekant)
-  ctx.fillStyle = '#1a0505';
-  ctx.beginPath();
-  ctx.moveTo(x+w/2-6, y+h); ctx.lineTo(x+w/2, y+h*0.52); ctx.lineTo(x+w/2+6, y+h);
-  ctx.closePath(); ctx.fill();
+  // Stang + flag
+  const sx = x+(w/2|0);
+  ctx.fillStyle = '#4a3010';
+  ctx.fillRect(sx-1, y-5, 2, roofH+6);
+  ctx.fillStyle = '#c9a84c';
+  ctx.beginPath(); ctx.moveTo(sx, y-5); ctx.lineTo(sx+8, y-2); ctx.lineTo(sx, y+3); ctx.closePath(); ctx.fill();
 
-  // Stang
-  const stangX = x+(w/2|0);
-  ctx.fillStyle = C.tentPole;
-  ctx.fillRect(stangX-1, y-6, 3, h+7);
-  ctx.fillStyle = C.lanceWoodHi;
-  ctx.fillRect(stangX-1, y-6, 1, h+7);
-
-  // Flag (guld)
-  ctx.fillStyle = C.tentFlag;
-  ctx.beginPath(); ctx.moveTo(stangX, y-6); ctx.lineTo(stangX+10, y-2); ctx.lineTo(stangX, y+4); ctx.closePath(); ctx.fill();
-
-  // Bardune
-  ctx.strokeStyle = C.tentRope; ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x-5, y+h+3); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x+w+5, y+h+3); ctx.stroke();
-
-  // Bundkant
-  ctx.fillStyle = '#cc2020';
-  ctx.fillRect(x, y+h-2, w, 2);
+  // Bundlinje
+  ctx.fillStyle = '#3a5878';
+  ctx.fillRect(x, y+h-1, w, 2);
 }
 
 // ── Highscore ──────────────────────────────────────────
