@@ -47,51 +47,41 @@
     .nav-mobile a { font-family:var(--blackletter); color:var(--text); text-decoration:none; font-size:1.1rem; }
     @media(max-width:700px){ nav{padding:0 1.2rem;} .nav-links,.nav-socials{display:none;} .nav-hamburger{display:flex;} }
 
-    .game-wrapper { margin-top:68px; min-height:calc(100vh - 68px); display:flex; flex-direction:column; align-items:center; padding:2.5rem 1rem 5rem; }
-    .game-title { font-family:var(--blackletter); font-size:clamp(1.6rem,4vw,2.8rem); color:var(--gold); text-align:center; margin-bottom:.4rem; text-shadow:0 0 30px rgba(201,168,76,.5); letter-spacing:.06em; }
-    .game-subtitle { color:var(--muted); text-align:center; font-size:.9rem; margin-bottom:1.8rem; letter-spacing:.05em; }
+    /* ── Desktop: portræt-spil centreret ── */
+    .game-wrapper {
+      margin-top: 68px;
+      min-height: calc(100vh - 68px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem 3rem;
+      gap: 1rem;
+    }
+    .game-title { font-family:var(--blackletter); font-size:2rem; color:var(--gold); text-align:center; text-shadow:0 0 30px rgba(201,168,76,.5); letter-spacing:.06em; }
+    .game-subtitle { color:var(--muted); text-align:center; font-size:.85rem; letter-spacing:.05em; }
 
     .canvas-wrap {
-      position:relative; width:100%; max-width:960px;
-      border:1px solid rgba(201,168,76,.3);
-      box-shadow:0 0 80px rgba(0,0,0,.95), 0 0 120px rgba(201,168,76,.08), inset 0 0 0 1px rgba(201,168,76,.05);
+      position: relative;
+      /* Portræt-ratio 270:480 = 9:16. Skaler efter højde, maks 400px bred. */
+      height: min(calc(100vh - 220px), 640px);
+      width: auto;
+      aspect-ratio: 270 / 480;
+      border: 1px solid rgba(201,168,76,.3);
+      box-shadow: 0 0 60px rgba(0,0,0,.95), 0 0 100px rgba(201,168,76,.07);
     }
-    #gameCanvas { display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; cursor:default; }
+    #gameCanvas {
+      display: block; width: 100%; height: 100%;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+    }
 
-    /* Touch-zoner direkte paa canvasset — usynlige men klikbare */
-    .touch-overlay {
-      display: none;
-      position: absolute; inset: 0;
-      pointer-events: none;
-    }
+    /* Touch-overlay (mobil) */
+    .touch-overlay { display: none; position: absolute; inset: 0; pointer-events: none; }
     .touch-zone {
-      position: absolute;
-      bottom: 0;
-      height: 55%;          /* nederste 55% af canvasset er klikbar zone */
-      pointer-events: auto;
+      position: absolute; pointer-events: auto;
       -webkit-tap-highlight-color: transparent;
-      user-select: none; -webkit-user-select: none;
-      cursor: pointer;
+      user-select: none; -webkit-user-select: none; cursor: pointer;
     }
-    .touch-zone-left  { left: 0;   width: 40%; }  /* venstre 40% = duk */
-    .touch-zone-right { right: 0;  width: 60%; }  /* højre  60% = hop */
-
-    /* Subtile labels saa man ved hvad der sker */
-    .touch-zone::after {
-      content: attr(data-label);
-      position: absolute;
-      bottom: 8px;
-      left: 50%; transform: translateX(-50%);
-      font-family: var(--blackletter);
-      font-size: 0.75rem;
-      color: rgba(201,168,76,0.35);
-      letter-spacing: 0.06em;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-    .touch-zone:active::after { color: rgba(201,168,76,0.7); }
-
-    /* Fjern de gamle knapper under canvasset — vises ikke laengere */
     .touch-controls { display: none !important; }
 
     /* ── Mobil: canvasset fylder hele skaermen ── */
@@ -187,7 +177,7 @@
   <p class="game-subtitle">Saml ringe — drik øl — overlev så længe du kan</p>
 
   <div class="canvas-wrap">
-    <canvas id="gameCanvas" width="480" height="270"></canvas>
+    <canvas id="gameCanvas" width="270" height="480"></canvas>
     <!-- Touch-zoner overlaid paa canvasset (kun synlige paa mobil) -->
     <div class="touch-overlay">
       <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP" style="width:100%"></div>
@@ -239,7 +229,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-const VW = 480, VH = 270;
+const VW = 270, VH = 480;
 
 // CONFIG er nu i config.js — indlæses via <script> i <head>
 
@@ -254,32 +244,33 @@ function rnd(min, max) {
   return Math.max(min * 0.6, Math.min(max * 1.6, val));  // tillad lidt overflow begge veje
 }
 
-// ── Fysik-konstanter (spiller & sprites) ───────────────
+// ── Fysik- og layout-konstanter ────────────────────────
+// Portræt-canvas: VW=270, VH=480
 const GRAVITY        = 0.38;
-const JUMP_VY        = -8.2;  // ubrugt (erstattet af CONFIG.jumpSmall + boost)
-const PLATFORM_H     = 10;    // platformens visuelle tykkelse
-const PLATFORM_Y3    = 82;    // n3 overflade Y (synkroniseret med CONFIG — ikke skift ét uden det andet)
-const PLAYER_SX      = 92;
-const GROUND_Y       = 222;
-const PW             = 20;   // spiller hitbox bredde
-const PH             = 28;   // spiller hitbox hoejde
-const LANCE_OX       = 36;   // lansespids x-offset (kun til visning)
-const LANCE_OY       = 10;
+const PLATFORM_H     = 8;
+const PLATFORM_Y3    = CONFIG.gen.platformY3;  // = 220
+const PLAYER_SX      = 52;     // spiller x (fast skærm-position)
+const GROUND_Y       = 390;    // jordbane-overflade Y (81% fra top)
+const PW             = 14;     // spiller hitbox bredde
+const PH             = 20;     // spiller hitbox højde
+const LANCE_OX       = 28;
+const LANCE_OY       = 8;
 const LANCE_DUR      = 15;
-const JUMP_BUFFER    = 7;    // frames et hop-tryk huskes (foeles mere responsivt)
+const JUMP_BUFFER    = 7;
 
-// Sprite-maal og placering (afledt af CONFIG/jord)
-const TENT_W      = 36, TENT_H = 34;
-const RING_R      = 8;
-const RING_LOW_Y  = GROUND_Y - 26;  // ring i koerehoejde (rammes uden hop)
-const RING_HIGH_Y = GROUND_Y - 66;  // haevet ring (kraever hop)
+const TENT_W      = 34;
+const RING_R      = 7;
+const RING_LOW_Y  = GROUND_Y - 22;   // = 368  (lav ring, rides igennem)
+const RING_HIGH_Y = GROUND_Y - 55;   // = 335  (høj ring, kræver hop)
 
-// To telt-typer: lille (lille hop) og hoejt (kraever fuldt hop)
-const TENT_H_SMALL     = 34;   // visuelt lille telt
-const TENT_H_TALL      = 46;   // visuelt hoejt telt (lidt laengere end lille)
-const TENT_HIT_H_SMALL = 20;   // hitbox lille — clearas med lille hop (player.y <= 176)
-const TENT_HIT_H_TALL  = 38;   // hitbox hoejt  — kraever fuldt hop (player.y <= 158)
-const RING_VALUE       = 18;   // grundpoint pr. ring (ganges med combo-multiplier)
+// To telt-typer
+const TENT_H_SMALL     = 32;
+const TENT_H_TALL      = 46;
+const TENT_HIT_H_SMALL = 20;   // clearas med lille hop  (player.y <= 352)
+const TENT_HIT_H_TALL  = 52;   // kræver fuldt hop       (player.y <= 320)
+const TENT_HIT_W       = 20;
+
+const RING_VALUE       = 18;
 const SPEED_BONUS_THRESHOLD = CONFIG.startSpeed + 0.30 * (CONFIG.maxSpeed - CONFIG.startSpeed);
 // = ~2.91 px/frame. Over dette niveau tæller ringe dobbelt.
 
@@ -361,12 +352,11 @@ const SPRITE_DEFS = {
 };
 
 // Spil-stoerrelser (kan finjusteres her)
-const PLAYER_GH = 46, PLAYER_OX = -12, PLAYER_OY = -14;
-const RING_GH   = 28;
-const BEER_GH   = 30;
-const TENT_GW   = 38;   // teltets bredde i spil-px (drevet af bredde)
-const TENT_HIT_W = 22;   // vandret hitbox-bredde (begge telttyper)
-const TORCH_GH   = 28;
+const PLAYER_GH = 40, PLAYER_OX = -10, PLAYER_OY = -12;
+const RING_GH   = 24;
+const BEER_GH   = 26;
+const TENT_GW   = 34;
+const TORCH_GH  = 24;
 
 const SPR = {};
 function loadSprites() {
@@ -966,8 +956,8 @@ function drawStars() {
 }
 
 function drawMoon() {
-  const mx = ((360 - worldX*0.015) % (VW+200) + VW+200) % (VW+200);
-  const my = 38;
+  const mx = ((220 - worldX*0.015) % (VW+200) + VW+200) % (VW+200);
+  const my = 80;
   if (bgReady && BG.moon) { ctx.drawImage(BG.moon.cv, (mx - BG.moon.w/2)|0, (my - BG.moon.h/2)|0); return; }
   // Glow
   const gl = ctx.createRadialGradient(mx,my,0,mx,my,36);
@@ -986,7 +976,7 @@ function drawMoon() {
 }
 
 function drawCastle() {
-  if (bgReady && BG.castle) { bgTile(BG.castle, 0.10, 226); return; }
+  if (bgReady && BG.castle) { bgTile(BG.castle, 0.10, 360); return; }
   // Slotsiluet - parallax 0.07x
   const off = (-(worldX*0.07)) % (VW*2.2);
   for (let repeat = 0; repeat < 3; repeat++) {
@@ -996,7 +986,7 @@ function drawCastle() {
 }
 
 function drawCastleAt(bx) {
-  const by = 100;
+  const by = 220;  // sænket pga. portræt-canvas (GROUND_Y=390)
   ctx.fillStyle = C.castle;
 
   // Mur
@@ -1539,57 +1529,45 @@ function drawPlayerBody() {
 
 // ── HUD ────────────────────────────────────────────────
 function drawHUD() {
-  // Helbreds-panel
+  // Portræt-HUD: helbredsbar vandret øverst, score til højre
+  const barW = 100, barH = 7, barX = 5, barY = 5;
+
+  // Helbreds-baggrund
   ctx.fillStyle = C.uiBg;
-  ctx.fillRect(5, 5, 100, 22);
-  ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
-  ctx.strokeRect(5.5, 5.5, 99, 21);
-
-  // Helbreds-label
-  ctx.fillStyle = C.uiMuted; ctx.font = '6px monospace'; ctx.textAlign = 'left';
-  ctx.fillText('HELBRED', 9, 14);
-
-  // Helbreds-bar
-  const bw = 84, bh = 6, bx = 9, by = 16;
+  ctx.fillRect(barX-1, barY-1, barW+2, barH+4);
   ctx.fillStyle = '#1a0505';
-  ctx.fillRect(bx, by, bw, bh);
+  ctx.fillRect(barX, barY, barW, barH);
 
+  // Helbreds-fyld
   const pct = health / HEALTH_MAX;
-  const hg = ctx.createLinearGradient(bx, by, bx+bw*pct, by);
+  const hg = ctx.createLinearGradient(barX,barY, barX+barW*pct,barY);
   if (pct > 0.5) { hg.addColorStop(0,'#cc1a1a'); hg.addColorStop(1,'#ee3030'); }
   else if (pct > 0.25) { hg.addColorStop(0,'#cc6600'); hg.addColorStop(1,'#ee8820'); }
   else { hg.addColorStop(0,'#cc0000'); hg.addColorStop(1,'#ff1010'); }
   ctx.fillStyle = hg;
-  ctx.fillRect(bx, by, (bw*pct)|0, bh);
-
+  ctx.fillRect(barX, barY, (barW*pct)|0, barH);
   ctx.strokeStyle = 'rgba(201,168,76,0.25)'; ctx.lineWidth = 1;
-  ctx.strokeRect(bx-.5, by-.5, bw+1, bh+1);
+  ctx.strokeRect(barX-.5, barY-.5, barW+1, barH+1);
 
-  // Oel-ikon ved siden af
-  drawBeer(117, 8);
+  // Øl-ikon
+  drawBeer(barX + barW + 8, barY - 3);
 
-  // Score-panel (hoejre side)
-  ctx.fillStyle = C.uiBg;
-  ctx.fillRect(VW-105, 5, 100, 26);
-  ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
-  ctx.strokeRect(VW-104.5, 5.5, 99, 25);
-
-  // Linje 1: ringe (hoejre, med "pop" naar man samler)
+  // Score/ringe (højre side, same y)
   const rp = 1 + ringPop*0.6;
   ctx.save();
-  ctx.translate(VW-8, 16); ctx.scale(rp, rp);
+  ctx.translate(VW-5, barY+6); ctx.scale(rp, rp);
   ctx.fillStyle = C.gold; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'right';
   ctx.fillText('Ringe: ' + rings, 0, 0);
   ctx.restore();
 
-  // Linje 2: fart (venstre) + distance (hoejre)
-  ctx.font = '6px monospace';
-  ctx.textAlign = 'right'; ctx.fillStyle = C.uiMuted;
-  ctx.fillText(distance + ' m', VW-8, 26);
-  ctx.textAlign = 'left';
+  // Distance + fart (under helbredsbar)
   const inSpeedBonus = speed >= SPEED_BONUS_THRESHOLD;
-  ctx.fillStyle = inSpeedBonus ? C.goldHi : (speed > 3.5 ? C.redHi : C.uiMuted);
-  ctx.fillText('Fart x' + speed.toFixed(1) + (inSpeedBonus ? '  ×2!' : ''), VW-100, 26);
+  ctx.font = '5px monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = C.uiMuted;
+  ctx.fillText(distance + ' m', barX, barY + barH + 8);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = inSpeedBonus ? C.goldHi : C.uiMuted;
+  ctx.fillText('x' + speed.toFixed(1) + (inSpeedBonus ? ' ×2!' : ''), VW-5, barY + barH + 8);
 
   // Combo-multiplier (midt-top) — vises kun naar den er over x1
   const mult = comboMult();

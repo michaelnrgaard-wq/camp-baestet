@@ -1,154 +1,111 @@
 // ════════════════════════════════════════════════════════════════════════
-//  RINGRIDNING PÅ CYKEL — GAME CONFIG
-//  Skru på tallene herunder for at justere spillet.
+//  RINGRIDNING — GAME CONFIG  (portræt-udgave, canvas 270×480)
 //  Gem filen og genindlæs siden — ændringer virker med det samme.
 // ════════════════════════════════════════════════════════════════════════
 //
-//  HURTIG OVERSIGT:
-//    ① GENEREL TILFÆLDIGHED (RANDOMNESS)   ← start her
+//  OVERSIGT:
+//    ① RANDOMNESS       ← juster gameplay-følelse her
 //    ② HASTIGHED
 //    ③ HOP
 //    ④ LIV & ØL
 //    ⑤ FORHINDRINGER
-//    ⑥ N1  — jord (ringe, telte, ravne)
-//    ⑦ N2  — flyvende platform (ringe)
-//    ⑧ N3  — høj platform (øl, bliver sværere)
+//    ⑥ N1  jord (ringe, telte)
+//    ⑦ N2  flyvende platform (ringe)
+//    ⑧ N3  høj platform (øl)
 //    ⑨ SVÆRHEDSGRAD
 //
 // ════════════════════════════════════════════════════════════════════════
 
 const CONFIG = {
 
-  // ════════════════════════════════════════════════════════════════════
-  //  ① GENEREL TILFÆLDIGHED
-  //     Én knap der styrer hvor uforudsigelig banen føles.
-  //     Påvirker: afstande mellem objekter, ring-gruppe-størrelser,
-  //               platform-størrelser, øl-chance-udsving.
-  // ════════════════════════════════════════════════════════════════════
-
+  // ── ① RANDOMNESS ────────────────────────────────────────────────────
   RANDOMNESS: 1.4,
-  //  0.5  = meget regelmæssig  (forudsigelig, pædagogisk)
-  //  1.0  = standard
-  //  1.4  = nuværende anbefaling  ← god balance
-  //  2.0  = kaotisk  (store udsving, sjov og overraskende)
+  //  0.5 = regelmæssig  •  1.0 = standard  •  2.0 = kaotisk
 
 
-  // ════════════════════════════════════════════════════════════════════
-  //  ② HASTIGHED
-  // ════════════════════════════════════════════════════════════════════
-
-  startSpeed:       1.8,    // px/frame ved start
-  maxSpeed:         5.5,    // øvre grænse
-  speedRampEvery:   150,    // frames mellem stigninger (60 frames = 1 sek)
-  speedRampAmount:  0.14,   // fart-stigning pr. step
+  // ── ② HASTIGHED ─────────────────────────────────────────────────────
+  startSpeed:       1.5,    // px/frame ved start
+  maxSpeed:         4.5,    // øvre grænse
+  speedRampEvery:   150,    // frames mellem stigninger
+  speedRampAmount:  0.11,   // stigning pr. step
 
 
-  // ════════════════════════════════════════════════════════════════════
-  //  ③ HOP
-  //     Kort tryk = lille hop (når IKKE op på N2/N3).
-  //     Hold knappen = højt hop (når N2 og N3).
-  // ════════════════════════════════════════════════════════════════════
+  // ── ③ HOP ────────────────────────────────────────────────────────────
+  //  Kort tryk = lille hop  (kan IKKE nå N2/N3)
+  //  Hold = højt hop        (når N2 og N3)
+  //
+  //  Lille hop stigning:   6² / (2×0.38) = 47 px
+  //  Fuldt hop stigning:  (6 + 16×0.36)² / (2×0.38) = 182 px
+  //  N2 er 80 px over ground → lille hop når ikke op  ✓
+  //  N3 er 90 px over N2    → lille hop når ikke N3   ✓
+  jumpSmall:          -6.0,
+  jumpBoostPerFrame:  -0.36,
+  jumpBoostMaxFrames:  16,
 
-  jumpSmall:          -4.0,   // initial hastighed ved hop (negativ = op)
-  jumpBoostPerFrame:  -0.32,  // ekstra kraft pr. frame mens knappen holdes
-  jumpBoostMaxFrames:  18,    // maks antal boost-frames
-  // → max hop-vy = -4.0 - 18×0.32 = -9.76
 
-
-  // ════════════════════════════════════════════════════════════════════
-  //  ④ LIV & ØL
-  // ════════════════════════════════════════════════════════════════════
-
+  // ── ④ LIV & ØL ──────────────────────────────────────────────────────
   healthMax:    100,
-  healthDrain:  0.032,   // liv/frame  (~1.9/sek)  →  ~52 sek til tom uden øl
-  beerHeal:     30,      // liv genoprettet pr. øl (max = healthMax)
+  healthDrain:  0.022,   // pr. frame — ~1.3/sek → tomt på ~76 sek uden øl
+  beerHeal:     30,
 
 
-  // ════════════════════════════════════════════════════════════════════
-  //  ⑤ FORHINDRINGER
-  // ════════════════════════════════════════════════════════════════════
-
-  tentDamage:    12,    // liv tabt ved telt-kollision
-  tentSpeedLoss: 1.3,   // fart tabt ved telt-kollision
+  // ── ⑤ FORHINDRINGER ─────────────────────────────────────────────────
+  tentDamage:    12,
+  tentSpeedLoss: 1.3,
 
 
-  // ════════════════════════════════════════════════════════════════════
-  //  ⑥ N1 — JORDBANE
-  //     Ringe, telte og ravne på jordbanen. INGEN øl (øl er kun N3).
-  // ════════════════════════════════════════════════════════════════════
-
+  // ── ⑥ N1 — JORDBANE ─────────────────────────────────────────────────
   gen: {
 
-    minGap:        120,   // mindste afstand mellem to objekter (px)
-    maxGap:        220,   // største afstand  (ganges med RANDOMNESS)
-    gapAfterTent:  180,   // ekstra luft efter telt/ravn
+    minGap:        80,
+    maxGap:        160,
+    gapAfterTent:  140,
 
-    weightRing:     22,   // spawnvægt: ring
-    weightBeer:     0,    // spawnvægt: øl  ← 0 = ingen øl på N1
-    weightTent:     18,   // spawnvægt: lille telt  (lille hop over)
-    weightTentTall: 14,   // spawnvægt: højt telt   (fuldt hop over)
+    weightRing:     22,
+    weightBeer:     0,
+    weightTent:     18,   // lille telt (lille hop over)
+    weightTentTall: 14,   // højt telt  (fuldt hop over)
 
-    ringGroupMin:      1,   // min antal ringe i gruppe
-    ringGroupMax:      1,   // max antal ringe i gruppe på N1 (hold det sparsomt)
-    ringGroupSpacing:  30,
-
-    // Interne — rør ikke:
-    minBeerGap:         999999,
-    highRingChance:     0,
+    ringGroupMin:      1,
+    ringGroupMax:      2,
+    ringGroupSpacing:  22,
+    highRingChance:    0,
+    minBeerGap:        999999,
 
 
-    // ════════════════════════════════════════════════════════════════
-    //  ⑦ N2 — FLYVENDE PLATFORME (ringe)
-    //     Kræver ét højt hop fra jordbanen.
-    //     Indeholder kun ringe — øl er forbeholdt N3.
-    // ════════════════════════════════════════════════════════════════
-
+    // ── ⑦ N2 — FLYVENDE PLATFORME (ringe) ───────────────────────────
     platformSpawnChance: 0.50,
-    //  Sandsynlighed for at en N2 overhovedet spawner ved hvert forsøg.
-    //  0.3 = sjælden  •  0.5 = standard  •  0.8 = næsten altid
+    //  0.3 = sjælden  •  0.5 = standard  •  0.8 = hyppig
 
-    platformMinW:    70,    // N2-bredde når der IKKE er N3
-    platformMaxW:    110,
-    n2WithN3MinW:    110,   // N2-bredde når der ER N3 (stor platform = god afsæt)
-    n2WithN3MaxW:    160,
-    platformGapMin:  160,   // afstand mellem N2-platforme
-    platformGapMax:  300,
-    platformY:       158,   // N2 overfladeY (ikke skift uden at tjekke fysik)
+    platformMinW:    50,
+    platformMaxW:    90,
+    n2WithN3MinW:    80,    // N2 bredde når der ER N3 (større afsæt)
+    n2WithN3MaxW:   115,
+    platformGapMin: 120,
+    platformGapMax: 230,
+    platformY:      310,   // N2 overfladeY  (80 px over ground)
 
-    n2RingMin:       2,     // ringe i række
+    n2RingMin:       2,
     n2RingMax:       4,
-    n2RingSpacing:   28,    // px mellem ringe i række
+    n2RingSpacing:   22,
 
 
-    // ════════════════════════════════════════════════════════════════
-    //  ⑧ N3 — HØJE PLATFORME (øl)
-    //     Kræver to hop: jord → N2 → N3.
-    //     Kun øl. Første øl er altid garanteret (tutorial).
-    //     Herefter faldende sandsynlighed med distancen.
-    // ════════════════════════════════════════════════════════════════
+    // ── ⑧ N3 — HØJE PLATFORME (øl) ──────────────────────────────────
+    platformY3:     220,   // N3 overfladeY  (90 px over N2)
+    n3MinW:          40,
+    n3MaxW:          65,
+    n3GapMin:        15,   // luft mellem N2 højrekant og N3 venstrekant
+    n3GapMax:        40,
 
-    platformY3:      82,    // N3 overfladeY (ikke nåbar direkte fra jord)
-    n3MinW:          55,    // N3 platform-bredde
-    n3MaxW:          95,
-    n3GapMin:        20,    // luft mellem N2's højrekant og N3's venstrekant
-    n3GapMax:        60,
-
-    //  Øl-chance falder med distancen:
-    n3BeerStart:     0.35,  // startchance  (after første garanterede øl)
-    n3BeerPer1000m:  0.06,  // reduktion pr. 1000 m
-    n3BeerMin:       0.08,  // bundgrænse (spillet forbliver muligt)
-    //
-    //  Oversigt:  0 m → 35%  •  1000 m → 29%  •  2000 m → 23%
-    //             3000 m → 17%  •  5000 m+ → 8%
+    n3BeerStart:     0.35,
+    n3BeerPer1000m:  0.06,
+    n3BeerMin:       0.08,
+    //  Øl-chance:  0 m → 35%  •  1000 m → 29%  •  3000 m → 17%  •  5000 m → 8%
 
 
-    // ════════════════════════════════════════════════════════════════
-    //  ⑨ SVÆRHEDSGRAD (stiger automatisk med distancen)
-    // ════════════════════════════════════════════════════════════════
-
-    difficultyDistance: 4000,   // worldX (px) hvor maks-sværhed nås
-    gapTightenMax:      0.35,   // afstande krymper op til 35% ved maks
-    tentWeightBonus:    14,     // ekstra telt-vægt ved maks sværhedsgrad
+    // ── ⑨ SVÆRHEDSGRAD ───────────────────────────────────────────────
+    difficultyDistance: 3000,
+    gapTightenMax:      0.35,
+    tentWeightBonus:    14,
   },
-
 };
