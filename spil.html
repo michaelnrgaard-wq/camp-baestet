@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ringridning på Cykel — Camp Bæstet</title>
+  <title>Ringridning — Camp Bæstet</title>
   <meta name="description" content="Spil Camp Bæstets officielle ringridningsspil. Saml ringe med lansen, drik øl for at overleve!" />
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
   <style>
@@ -189,15 +189,14 @@
 </div>
 
 <div class="game-wrapper">
-  <h1 class="game-title">Ringridning på Cykel</h1>
+  <h1 class="game-title">Ringridning</h1>
   <p class="game-subtitle">Saml ringe — drik øl — overlev så længe du kan</p>
 
   <div class="canvas-wrap">
     <canvas id="gameCanvas" width="480" height="270"></canvas>
     <!-- Touch-zoner overlaid paa canvasset (kun synlige paa mobil) -->
     <div class="touch-overlay">
-      <div class="touch-zone touch-zone-left"  id="btnDuck" data-label="DUK"></div>
-      <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP"></div>
+      <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP" style="width:100%"></div>
     </div>
   </div>
 
@@ -206,7 +205,7 @@
 
   <div class="controls-hint">
     <span class="hint-item"><span class="kbd">W</span> / <span class="kbd">Pil op</span> / <span class="kbd">Space</span> Hop</span>
-    <span class="hint-item"><span class="kbd">S</span> / <span class="kbd">Pil ned</span> Duk (under ravne)</span>
+    <span class="hint-item">Kort hop = over lille telt  •  Langt hop = over højt telt</span>
     <span class="hint-item">Rid igennem ringe for at samle dem</span>
     <span class="hint-item"><span class="kbd">M</span> Lyd</span>
     <span class="hint-item"><span class="kbd">Esc</span> Pause</span>
@@ -282,10 +281,11 @@ const RING_R      = 8;
 const RING_LOW_Y  = GROUND_Y - 26;  // ring i koerehoejde (rammes uden hop)
 const RING_HIGH_Y = GROUND_Y - 66;  // haevet ring (kraever hop)
 
-// Ravn (dukke-forhindring) — flyver i hovedhoejde; man skal DUKKE, ikke hoppe
-const BIRD_W = 24, BIRD_H = 11;     // hitbox
-const BIRD_Y = GROUND_Y - 28;       // top af hitbox (rammer staaende, misser dukkende)
-const DUCK_DROP = 12;               // hvor meget "hovedet" saenkes naar man dukker
+// To telt-typer: lille (lille hop) og hoejt (kraever fuldt hop)
+const TENT_H_SMALL     = 34;   // visuelt lille telt
+const TENT_H_TALL      = 62;   // visuelt hoejt telt
+const TENT_HIT_H_SMALL = 20;   // hitbox-hoejde lille — clearas med lille hop (player.y <= 176)
+const TENT_HIT_H_TALL  = 52;   // hitbox-hoejde hoejt  — kraever fuldt hop (player.y <= 144)
 const RING_VALUE = 18;              // grundpoint pr. ring (ganges med combo-multiplier)
 
 // Afledte aliasser fra CONFIG (saa resten af koden kan bruge dem direkte)
@@ -370,9 +370,8 @@ const PLAYER_GH = 46, PLAYER_OX = -12, PLAYER_OY = -14;
 const RING_GH   = 28;
 const BEER_GH   = 30;
 const TENT_GW   = 38;   // teltets bredde i spil-px (drevet af bredde)
-const TENT_HIT_W = 22, TENT_HIT_H = 24;  // teltets KOLLISIONS-box (mindre end visuelt = nemmere at hoppe over)
-const TORCH_GH  = 28;
-const BIRD_GH   = 18;   // ravnens tegne-hoejde
+const TENT_HIT_W = 22;   // vandret hitbox-bredde (begge telttyper)
+const TORCH_GH   = 28;
 
 const SPR = {};
 function loadSprites() {
@@ -548,8 +547,6 @@ let combo = 0;            // ringe i træk uden at misse
 let ringScore = 0;        // akkumuleret ring-score (med multiplier)
 
 // Input-tilstand
-let touchDuck = false;    // dukke-knap paa mobil
-let ducking = false;      // dukker spilleren lige nu?
 
 // ── Lyd (8-bit, syntetiseret — ingen filer) ─────────────
 let actx = null, masterGain = null, muted = false;
@@ -629,7 +626,7 @@ document.addEventListener('keydown', e => {
   if (actx && actx.state === 'suspended') actx.resume();
   if (keys[e.code]) return;
   keys[e.code] = true;
-  if (['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
+  if (['Space','ArrowUp'].includes(e.code)) e.preventDefault();
   if (['ArrowUp','KeyW'].includes(e.code)) { doJump = true; jumpHeld = true; }
   if (['Space','KeyX'].includes(e.code)) { doJump = true; jumpHeld = true; doLance = true; }
   if (e.code === 'KeyM') muted = !muted;
@@ -648,9 +645,6 @@ document.addEventListener('keyup', e => {
 const btnJumpEl = document.getElementById('btnJump');
 btnJumpEl.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(actx&&actx.state==='suspended')actx.resume(); doJump = true; jumpHeld = true; doLance = true; }, { passive:false });
 btnJumpEl.addEventListener('touchend',   e => { e.preventDefault(); jumpHeld = false; }, { passive:false });
-const btnDuck = document.getElementById('btnDuck');
-btnDuck.addEventListener('touchstart', e => { e.preventDefault(); touchDuck = true; }, { passive:false });
-btnDuck.addEventListener('touchend',   e => { e.preventDefault(); touchDuck = false; }, { passive:false });
 
 function handleNameKey(e) {
   if (e.key === 'Enter') { e.preventDefault(); submitScore(); }
@@ -746,8 +740,8 @@ function spawnNext() {
   const wRing = g.weightRing;
   const wBeer = g.weightBeer;
   const wTent = lastObstacle ? 0 : g.weightTent + g.tentWeightBonus * d;
-  const wBird = lastObstacle ? 0 : g.weightBird + g.tentWeightBonus * d * 0.5;
-  const roll  = Math.random() * (wRing + wBeer + wTent + wBird);
+  const wTentTall = lastObstacle ? 0 : g.weightTentTall + g.tentWeightBonus * d * 0.5;
+  const roll  = Math.random() * (wRing + wBeer + wTent + wTentTall);
 
   let extraGap = 0;
   if (roll < wRing) {
@@ -758,11 +752,11 @@ function spawnNext() {
     spawnRingGroup();
     lastObstacle = false;
   } else if (roll < wRing + wBeer + wTent) {
-    items.push({ type:'tent', x:spawnX, y:GROUND_Y - TENT_H, w:TENT_W, h:TENT_H, alive:true });
+    items.push({ type:'tent', x:spawnX, y:GROUND_Y - TENT_H_SMALL, w:TENT_W, h:TENT_H_SMALL, alive:true });
     extraGap = g.gapAfterTent;
     lastObstacle = true;
   } else {
-    items.push({ type:'bird', x:spawnX, y:BIRD_Y, w:BIRD_W, h:BIRD_H, bob:Math.random()*6.28, alive:true });
+    items.push({ type:'tent_tall', x:spawnX, y:GROUND_Y - TENT_H_TALL, w:TENT_W, h:TENT_H_TALL, alive:true });
     extraGap = g.gapAfterTent;
     lastObstacle = true;
   }
@@ -825,10 +819,6 @@ function update() {
   }
   if (!jumpHeld) jumpBoostFrames = CONFIG.jumpBoostMaxFrames; // kill boost ved slip
 
-  // Dukke: ned-tast saenker hovedet (paa jorden) og giver hurtigere fald i luften
-  const wantDuck = keys['ArrowDown'] || keys['KeyS'] || touchDuck;
-  ducking = wantDuck;
-  if (wantDuck && !player.onGround) player.vy += 0.6;  // fast-fald
 
   if (doLance && !lanceOn) { lanceOn = true; lanceTimer = LANCE_DUR; }  // kun visuelt stoed
   doLance = false;
@@ -862,10 +852,8 @@ function update() {
     }
   }
 
-  // Spillerens hitbox — naar man dukker, saenkes "hovedet" (top ned, lavere)
-  const ducked = ducking && player.onGround;
-  const ptop = player.y + (ducked ? DUCK_DROP : 0);
-  const ph   = PH - (ducked ? DUCK_DROP : 0);
+  const ptop = player.y;
+  const ph   = PH;
 
   // Item-kollision
   for (const it of items) {
@@ -882,18 +870,12 @@ function update() {
         addPopup(ix, it.y - 8, '+ØL', C.beerHi, false);
         sfx.beer();
       }
-    } else if (it.type === 'tent' && invFrames === 0) {
-      // Mindre kollisions-box centreret paa teltets fod => nemmere at hoppe over
+    } else if ((it.type === 'tent' || it.type === 'tent_tall') && invFrames === 0) {
+      const hitH = it.type === 'tent_tall' ? TENT_HIT_H_TALL : TENT_HIT_H_SMALL;
       const cx = ix + it.w/2, hl = cx - TENT_HIT_W/2, hr = cx + TENT_HIT_W/2;
-      const htop = GROUND_Y - TENT_HIT_H;
+      const htop = GROUND_Y - hitH;
       if (hl < player.x+PW-2 && hr > player.x+2 && htop < ptop+ph-2) {
         hitObstacle(player.x+10, player.y+8);
-        if (health <= 0) { health = 0; triggerDeath(); return; }
-      }
-    } else if (it.type === 'bird' && invFrames === 0) {
-      if (ix < player.x+PW-2 && ix+it.w > player.x+2 &&
-          it.y < ptop+ph-1 && it.y+it.h > ptop+1) {
-        hitObstacle(player.x+10, ptop+4);
         if (health <= 0) { health = 0; triggerDeath(); return; }
       }
     } else if (it.type === 'ring') {
@@ -1367,7 +1349,6 @@ function drawPlayer() {
   // Squash/stretch + dukke — skaleres om fødderne (pivot ved jorden),
   // saa figuren bliver staaende paa jorden uanset deformation.
   let sx = 1 + squash*0.35, sy = 1 - squash*0.35;
-  if (ducking && player.onGround) { sy *= 0.66; sx *= 1.14; }
   const baseX = player.x + PW/2, baseY = player.y + PH;
   ctx.save();
   ctx.translate(baseX, baseY); ctx.scale(sx, sy); ctx.translate(-baseX, -baseY);
@@ -1654,14 +1635,14 @@ function drawStart() {
   ctx.strokeRect(VW/2-106, VH/2-62, 212, 124);
 
   cText('RINGRIDNING', VW/2, VH/2-44, 'bold 18px monospace', C.goldHi);
-  cText('PÅ CYKEL', VW/2, VH/2-29, 'bold 10px monospace', C.gold);
+  cText('', VW/2, VH/2-29, 'bold 10px monospace', C.gold);
   hline(VH/2-22, 160);
 
   ctx.font = '7px monospace'; ctx.fillStyle = C.white; ctx.textAlign = 'center';
-  ctx.fillText('HOP over telte  -  DUK under ravne', VW/2, VH/2-11);
-  ctx.fillText('Rid igennem ringe i træk = COMBO', VW/2, VH/2+1);
-  ctx.fillText('Drik øl for at holde liv', VW/2, VH/2+13);
-  ctx.fillText('W/Pil op = hop   S/Pil ned = duk', VW/2, VH/2+27);
+  ctx.fillText('Kort hop = over lille telt', VW/2, VH/2-11);
+  ctx.fillText('Hold hop = over højt telt', VW/2, VH/2-1);
+  ctx.fillText('Rid igennem ringe i træk = COMBO', VW/2, VH/2+11);
+  ctx.fillText('Drik øl for at holde liv', VW/2, VH/2+23);
 
   hline(VH/2+38, 160);
 
@@ -1742,7 +1723,7 @@ function draw() {
     if (it.type === 'ring') drawRing(ix, it.y, it);
     else if (it.type === 'beer') drawBeer(ix|0, it.y|0);
     else if (it.type === 'tent') drawTent(ix|0, it.y|0, it.w, it.h);
-    else if (it.type === 'bird') drawBird(ix, it.y, it);
+    else if (it.type === 'tent_tall') drawTentTall(ix|0, it.y|0, it.w, it.h);
   }
 
   drawPlayer();
@@ -1785,41 +1766,56 @@ function drawPopups() {
 }
 
 // Ravn — flyver i hovedhoejde; man skal dukke under den
-function drawBird(x, y, it) {
-  x = x|0;
-  const by = (y + Math.sin((tick*0.08) + (it.bob||0)) * 2) | 0;  // let bob
-  const s = spr('bird_fly');
-  if (s) { const dw = BIRD_GH*s.fw/s.fh; blitDest(s, animFrame(s), x + it.w/2 - dw/2, by - (BIRD_GH-it.h)/2, dw, BIRD_GH); return; }
+function drawTentTall(x, y, w, h) {
+  x = x|0; y = y|0;
 
-  // Procedural ravn (pixel) — lyse, maanebelyste toner + highlight, saa den
-  // laeses tydeligt mod den moerke baggrund.
-  const flap = (tick >> 3) & 1;
-  const body = '#4a4658', edge = '#8e8aa6', dark = '#1c1a26';
+  // Skygge
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(x+w/2, y+h+2, w*0.55, 3, 0, 0, 6.28);
+  ctx.fill();
 
-  // moerk kant under (laeser mod lys himmel)
-  ctx.fillStyle = dark;
-  ctx.fillRect(x+5, by+3, 14, 7);
-  // krop + hoved
-  ctx.fillStyle = body;
-  ctx.fillRect(x+6, by+2, 12, 6);
-  ctx.fillRect(x+15, by+1, 6, 5);            // hoved
-  // hale
-  ctx.fillRect(x+1, by+3, 6, 3);
-  // maanebelyst highlight paa ryg/hoved
-  ctx.fillStyle = edge;
-  ctx.fillRect(x+7, by+2, 9, 1);
-  ctx.fillRect(x+15, by+1, 5, 1);
-  // naeb + oeje
-  ctx.fillStyle = '#e8801a'; ctx.fillRect(x+21, by+2, 3, 2);
-  ctx.fillStyle = '#f0d060'; ctx.fillRect(x+18, by+2, 1, 1);
-  // vinger (flapper op/ned) — lys overkant
-  if (flap) {
-    ctx.fillStyle = body; ctx.fillRect(x+8, by-4, 9, 5); ctx.fillRect(x+9, by-6, 5, 3);
-    ctx.fillStyle = edge; ctx.fillRect(x+8, by-4, 9, 1);
-  } else {
-    ctx.fillStyle = body; ctx.fillRect(x+8, by+7, 9, 5); ctx.fillRect(x+9, by+11, 5, 3);
-    ctx.fillStyle = edge; ctx.fillRect(x+8, by+7, 9, 1);
-  }
+  // Telt-krop — moerkere roed end lille telt (farlig!)
+  const tg = ctx.createLinearGradient(x, y, x+w, y+h);
+  tg.addColorStop(0, '#aa1a1a'); tg.addColorStop(0.5, '#701010'); tg.addColorStop(1, '#2a0808');
+  ctx.fillStyle = tg;
+  ctx.beginPath();
+  ctx.moveTo(x+w/2, y);
+  ctx.lineTo(x+w, y+h);
+  ctx.lineTo(x, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Midter-stribe
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.beginPath();
+  ctx.moveTo(x+w/2, y+4); ctx.lineTo(x+w/2+6, y+h); ctx.lineTo(x+w/2-6, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Indgang (mørk trekant)
+  ctx.fillStyle = '#1a0505';
+  ctx.beginPath();
+  ctx.moveTo(x+w/2-6, y+h); ctx.lineTo(x+w/2, y+h*0.52); ctx.lineTo(x+w/2+6, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Stang
+  const stangX = x+(w/2|0);
+  ctx.fillStyle = C.tentPole;
+  ctx.fillRect(stangX-1, y-6, 3, h+7);
+  ctx.fillStyle = C.lanceWoodHi;
+  ctx.fillRect(stangX-1, y-6, 1, h+7);
+
+  // Flag (guld)
+  ctx.fillStyle = C.tentFlag;
+  ctx.beginPath(); ctx.moveTo(stangX, y-6); ctx.lineTo(stangX+10, y-2); ctx.lineTo(stangX, y+4); ctx.closePath(); ctx.fill();
+
+  // Bardune
+  ctx.strokeStyle = C.tentRope; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x-5, y+h+3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x+w+5, y+h+3); ctx.stroke();
+
+  // Bundkant
+  ctx.fillStyle = '#cc2020';
+  ctx.fillRect(x, y+h-2, w, 2);
 }
 
 // ── Highscore ──────────────────────────────────────────

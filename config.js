@@ -83,10 +83,10 @@ const CONFIG = {
     maxGap:        220,   // største afstand  (ganges med RANDOMNESS)
     gapAfterTent:  180,   // ekstra luft efter telt/ravn
 
-    weightRing:    22,    // spawnvægt: ring
-    weightBeer:    0,     // spawnvægt: øl  ← 0 = ingen øl på N1
-    weightTent:    18,    // spawnvægt: telt
-    weightBird:    14,    // spawnvægt: ravn
+    weightRing:     22,   // spawnvægt: ring
+    weightBeer:     0,    // spawnvægt: øl  ← 0 = ingen øl på N1
+    weightTent:     18,   // spawnvægt: lille telt  (lille hop over)
+    weightTentTall: 14,   // spawnvægt: højt telt   (fuldt hop over)
 
     ringGroupMin:      1,   // min antal ringe i gruppe
     ringGroupMax:      1,   // max antal ringe i gruppe på N1 (hold det sparsomt)
