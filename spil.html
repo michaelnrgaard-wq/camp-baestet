@@ -254,7 +254,9 @@ const TENT_H_SMALL     = 34;   // visuelt lille telt
 const TENT_H_TALL      = 46;   // visuelt hoejt telt (lidt laengere end lille)
 const TENT_HIT_H_SMALL = 20;   // hitbox lille — clearas med lille hop (player.y <= 176)
 const TENT_HIT_H_TALL  = 38;   // hitbox hoejt  — kraever fuldt hop (player.y <= 158)
-const RING_VALUE = 18;              // grundpoint pr. ring (ganges med combo-multiplier)
+const RING_VALUE       = 18;   // grundpoint pr. ring (ganges med combo-multiplier)
+const SPEED_BONUS_THRESHOLD = CONFIG.startSpeed + 0.30 * (CONFIG.maxSpeed - CONFIG.startSpeed);
+// = ~2.91 px/frame. Over dette niveau tæller ringe dobbelt.
 
 // Afledte aliasser fra CONFIG (saa resten af koden kan bruge dem direkte)
 const HEALTH_MAX     = CONFIG.healthMax;
@@ -868,12 +870,14 @@ function update() {
           it.y + m > ptop && it.y - m < ptop + ph) {
         it.alive = false; rings++; combo++;
         const mult = comboMult();
-        const pts = RING_VALUE * mult;
+        const speedBonus = speed >= SPEED_BONUS_THRESHOLD ? 2 : 1;
+        const pts = RING_VALUE * mult * speedBonus;
         ringScore += pts;
         score = distance + ringScore;
-        boom(ix, it.y, C.goldHi, 14 + mult*3);
-        addPopup(ix, it.y - 6, '+' + pts, C.goldHi, false);
-        ringPop = 1; if (mult > 1) comboPop = 1;
+        boom(ix, it.y, speedBonus > 1 ? C.goldHi : C.gold, 14 + mult*3);
+        const label = speedBonus > 1 ? '×2  +' + pts : '+' + pts;
+        addPopup(ix, it.y - 6, label, speedBonus > 1 ? C.goldHi : C.gold, speedBonus > 1);
+        ringPop = 1; if (mult > 1 || speedBonus > 1) comboPop = 1;
         sfx.ring(mult);
       }
     }
@@ -1558,8 +1562,9 @@ function drawHUD() {
   ctx.textAlign = 'right'; ctx.fillStyle = C.uiMuted;
   ctx.fillText(distance + ' m', VW-8, 26);
   ctx.textAlign = 'left';
-  ctx.fillStyle = speed > 3.5 ? C.redHi : C.uiMuted;
-  ctx.fillText('Fart x' + speed.toFixed(1), VW-100, 26);
+  const inSpeedBonus = speed >= SPEED_BONUS_THRESHOLD;
+  ctx.fillStyle = inSpeedBonus ? C.goldHi : (speed > 3.5 ? C.redHi : C.uiMuted);
+  ctx.fillText('Fart x' + speed.toFixed(1) + (inSpeedBonus ? '  ×2!' : ''), VW-100, 26);
 
   // Combo-multiplier (midt-top) — vises kun naar den er over x1
   const mult = comboMult();
