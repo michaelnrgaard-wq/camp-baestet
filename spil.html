@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ringridning på Cykel — Camp Bæstet</title>
+  <meta name="description" content="Spil Camp Bæstets officielle ringridningsspil. Saml ringe med lansen, drik øl for at overleve!" />
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+  <style>
+    @import url('https://fonts.cdnfonts.com/css/cloister-black');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #c9a84c; --gold2: #e8c96a; --dark: #0a0805; --deep: #130f0a;
+      --stone: #1e1912; --text: #d4c4a0; --muted: #7a6a50; --red: #8b1a1a;
+      --blackletter: 'Cloister Black', 'UnifrakturMaguntia', serif;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--dark); color: var(--text); font-family: Georgia, serif; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 3rem; height: 68px;
+      background: linear-gradient(180deg,rgba(5,3,2,.96) 0%,rgba(5,3,2,.8) 100%);
+      border-bottom: 1px solid rgba(201,168,76,.15);
+      backdrop-filter: blur(12px); transition: all .3s;
+    }
+    nav.scrolled { border-bottom-color: rgba(201,168,76,.45); box-shadow: 0 4px 40px rgba(0,0,0,.7); }
+    .nav-logo { font-family: var(--blackletter); font-size: 1.5rem; color: var(--gold); text-decoration: none; letter-spacing: .04em; text-shadow: 0 0 20px rgba(201,168,76,.4); }
+    .nav-links { display: flex; gap: .3rem; list-style: none; }
+    .nav-links a { font-family: var(--blackletter); color: var(--text); text-decoration: none; font-size: .95rem; letter-spacing: .04em; padding: .45rem 1.1rem; border: 1px solid transparent; border-radius: 2px; transition: all .25s; position: relative; }
+    .nav-links a::after { content:''; position: absolute; bottom:-1px; left:50%; right:50%; height:1px; background:var(--gold); transition: all .25s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+    .nav-links a:hover::after { left:10%; right:10%; }
+    .nav-right { display: flex; align-items: center; gap: .4rem; }
+    .nav-socials { display: flex; gap: .6rem; align-items: center; margin-left: 1rem; }
+    .nav-socials a { display:flex; align-items:center; color:var(--muted); transition:color .25s; }
+    .nav-socials a:hover { color:var(--gold); }
+    .nav-socials svg { width:16px; height:16px; fill:currentColor; }
+    .nav-hamburger { display:none; flex-direction:column; gap:4px; background:none; border:none; cursor:pointer; padding:6px; margin-left:.5rem; }
+    .nav-hamburger span { display:block; width:22px; height:2px; background:var(--gold); transition:all .3s; }
+    .nav-mobile { display:none; position:fixed; top:68px; left:0; right:0; background:rgba(5,3,2,.98); padding:1.5rem 2rem; flex-direction:column; gap:1rem; border-bottom:1px solid rgba(201,168,76,.2); z-index:99; }
+    .nav-mobile.open { display:flex; }
+    .nav-mobile a { font-family:var(--blackletter); color:var(--text); text-decoration:none; font-size:1.1rem; }
+    @media(max-width:700px){ nav{padding:0 1.2rem;} .nav-links,.nav-socials{display:none;} .nav-hamburger{display:flex;} }
+
+    .game-wrapper { margin-top:68px; min-height:calc(100vh - 68px); display:flex; flex-direction:column; align-items:center; padding:2.5rem 1rem 5rem; }
+    .game-title { font-family:var(--blackletter); font-size:clamp(1.6rem,4vw,2.8rem); color:var(--gold); text-align:center; margin-bottom:.4rem; text-shadow:0 0 30px rgba(201,168,76,.5); letter-spacing:.06em; }
+    .game-subtitle { color:var(--muted); text-align:center; font-size:.9rem; margin-bottom:1.8rem; letter-spacing:.05em; }
+
+    .canvas-wrap {
+      position:relative; width:100%; max-width:960px;
+      border:1px solid rgba(201,168,76,.3);
+      box-shadow:0 0 80px rgba(0,0,0,.95), 0 0 120px rgba(201,168,76,.08), inset 0 0 0 1px rgba(201,168,76,.05);
+    }
+    #gameCanvas { display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; cursor:default; }
+
+    /* Touch-zoner direkte paa canvasset — usynlige men klikbare */
+    .touch-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .touch-zone {
+      position: absolute;
+      bottom: 0;
+      height: 55%;          /* nederste 55% af canvasset er klikbar zone */
+      pointer-events: auto;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+      cursor: pointer;
+    }
+    .touch-zone-left  { left: 0;   width: 40%; }  /* venstre 40% = duk */
+    .touch-zone-right { right: 0;  width: 60%; }  /* højre  60% = hop */
+
+    /* Subtile labels saa man ved hvad der sker */
+    .touch-zone::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: 8px;
+      left: 50%; transform: translateX(-50%);
+      font-family: var(--blackletter);
+      font-size: 0.75rem;
+      color: rgba(201,168,76,0.35);
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .touch-zone:active::after { color: rgba(201,168,76,0.7); }
+
+    /* Fjern de gamle knapper under canvasset — vises ikke laengere */
+    .touch-controls { display: none !important; }
+
+    /* ── Mobil: spillet fylder skaermen ────────────────── */
+    @media (max-width: 768px) {
+      /* Kompakt nav */
+      nav { height: 48px; padding: 0 1rem; }
+      .nav-logo { font-size: 1.1rem; }
+      .nav-mobile { top: 48px; }
+
+      /* Game-wrapper: ingen polstring, canvas fylder */
+      .game-wrapper {
+        margin-top: 48px;
+        padding: 0;
+        min-height: calc(100svh - 48px);
+        justify-content: flex-start;
+      }
+      .canvas-wrap { border-radius: 0; border-left: none; border-right: none; }
+
+      /* Skjul ALT indhold der ikke horer til selve spillet */
+      .game-title, .game-subtitle, .controls-hint,
+      .scores-section, .touch-controls { display: none !important; }
+
+      /* Canvas-wrap fylder hele den tilgaengelige bredde */
+      .game-wrapper { gap: 0; }
+      .canvas-wrap { flex-shrink: 0; }
+
+      /* Vis touch-overlay */
+      .touch-overlay { display: block; }
+
+      /* Forhindrer scroll mens man spiller */
+      body { overflow: hidden; touch-action: none; }
+    }
+
+    .controls-hint { display:flex; gap:2rem; flex-wrap:wrap; justify-content:center; margin-top:1.2rem; }
+    .hint-item { display:flex; align-items:center; gap:.45rem; color:var(--muted); font-size:.82rem; }
+    .kbd { background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.3); border-bottom-width:2px; border-radius:3px; padding:.1rem .45rem; font-family:monospace; font-size:.78rem; color:var(--gold); }
+
+    .scores-section { width:100%; max-width:560px; margin-top:4rem; }
+    .scores-title { font-family:var(--blackletter); font-size:1.7rem; color:var(--gold); text-align:center; margin-bottom:.5rem; text-shadow:0 0 20px rgba(201,168,76,.3); }
+    .scores-divider { width:120px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:0 auto 1.5rem; }
+    .scores-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+    .scores-table th { font-family:var(--blackletter); color:var(--gold); font-size:.8rem; padding:.4rem .8rem; text-align:left; border-bottom:1px solid rgba(201,168,76,.25); letter-spacing:.04em; }
+    .scores-table td { padding:.4rem .8rem; color:var(--text); border-bottom:1px solid rgba(255,255,255,.04); font-family:'Courier New',monospace; }
+    .scores-table tr:nth-child(1) td { color:#f0d060; }
+    .scores-table tr:nth-child(2) td { color:#d0d0d0; }
+    .scores-table tr:nth-child(3) td { color:#c8864a; }
+    .scores-note { text-align:center; color:var(--muted); font-size:.82rem; padding:1rem; font-style:italic; }
+  </style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="index.html" class="nav-logo">Camp Baestet</a>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="index.html#begivenheder">Begivenheder</a></li>
+      <li><a href="galleri.html">Galleri</a></li>
+      <li><a href="om.html">Om os</a></li>
+      <!-- Spil-link er bevidst skjult fra navigation -->
+    </ul>
+    <div class="nav-socials">
+      <a href="https://www.facebook.com/profile.php?id=100091878402241" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+      <a href="https://www.instagram.com/camp_baestet/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      </a>
+    </div>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="nav-mobile" id="navMobile">
+  <a href="index.html#begivenheder">Begivenheder</a>
+  <a href="galleri.html">Galleri</a>
+  <a href="om.html">Om os</a>
+  <!-- Spil-link er bevidst skjult fra navigation -->
+</div>
+
+<div class="game-wrapper">
+  <h1 class="game-title">Ringridning paa Cykel</h1>
+  <p class="game-subtitle">Saml ringe — drik oel — overlev saa laenge du kan</p>
+
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="270"></canvas>
+    <!-- Touch-zoner overlaid paa canvasset (kun synlige paa mobil) -->
+    <div class="touch-overlay">
+      <div class="touch-zone touch-zone-left"  id="btnDuck" data-label="DUK"></div>
+      <div class="touch-zone touch-zone-right" id="btnJump" data-label="HOP"></div>
+    </div>
+  </div>
+
+  <!-- Gammel knap-raekke (skjult) -->
+  <div class="touch-controls"></div>
+
+  <div class="controls-hint">
+    <span class="hint-item"><span class="kbd">W</span> / <span class="kbd">Pil op</span> / <span class="kbd">Space</span> Hop</span>
+    <span class="hint-item"><span class="kbd">S</span> / <span class="kbd">Pil ned</span> Duk (under ravne)</span>
+    <span class="hint-item">Rid igennem ringe for at samle dem</span>
+    <span class="hint-item"><span class="kbd">M</span> Lyd</span>
+    <span class="hint-item"><span class="kbd">Esc</span> Pause</span>
+  </div>
+
+  <section class="scores-section">
+    <h2 class="scores-title">Kongerigernes Highscore</h2>
+    <div class="scores-divider"></div>
+    <div id="scoresContainer"><p class="scores-note">Henter highscores...</p></div>
+  </section>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  SUPABASE CONFIG
+//  1. Gaa til supabase.com -> Project Settings -> API
+//  2. Koer denne SQL i SQL Editor:
+//
+//  create table highscores (
+//    id        bigint generated by default as identity primary key,
+//    name      text not null,
+//    score     integer not null,
+//    rings     integer not null,
+//    distance  integer not null,
+//    created_at timestamptz default now()
+//  );
+//  alter table highscores enable row level security;
+//  create policy "laes"    on highscores for select using (true);
+//  create policy "indsaet" on highscores for insert with check (true);
+//
+//  3. Indsaet dine vaerdier nedenfor
+// ════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://DIT_PROJEKT_ID.supabase.co';
+const SUPABASE_KEY = 'DIN_ANON_PUBLIC_KEY';
+
+// ── Canvas ─────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const VW = 480, VH = 270;
+
+// ════════════════════════════════════════════════════════
+//  CONFIG — skru paa spillet her
+//  Alle gameplay-tal samlet ét sted, saa balancen nemt kan justeres.
+// ════════════════════════════════════════════════════════
+const CONFIG = {
+  // ── Hastighed ──
+  startSpeed:      1.8,   // px pr. step ved start
+  maxSpeed:        5.5,   // oevre graense
+  speedRampEvery:  150,   // steps mellem hver hastighedsforoegelse (60 steps = 1 sek)
+  speedRampAmount: 0.14,  // hvor meget hastigheden stiger hver gang
+
+  // ── Liv / oel ──
+  healthMax:    100,
+  healthDrain:  0.020,    // liv tabt pr. frame (~1.2 pr. sekund)
+  beerHeal:     30,       // liv pr. oel
+  tentDamage:   12,       // liv tabt ved sammenstoed med telt
+
+  // ── Telt-sammenstoed ──
+  tentSpeedLoss: 1.3,     // hvor meget fart man mister ved at ramme et telt
+
+  // ── Hop ──
+  jumpSmall:          -4.0,   // lille hop (kort tryk) — naar IKKE op paa platforme
+  jumpBoostPerFrame:  -0.32,  // ekstra opadgaaende kraft pr. frame (hold)
+  jumpBoostMaxFrames:  18,    // max frames med boost → max vy = -4.0 - 18*0.32 = -9.76
+
+  // ── Bane-generering ──
+  //  Afstande i spillets interne px (banen er 480 bred).
+  gen: {
+    // ── n1: jord-niveau (sjaeldne ringe, ingen oel) ──
+    minGap:        120,
+    maxGap:        220,
+    gapAfterTent:  180,
+    weightRing:    22,   // faerre ringe paa jorden
+    weightBeer:    0,    // INGEN oel paa jorden — oel er kun paa platforme
+    weightTent:    18,
+    weightBird:    14,
+    minBeerGap:    999999, // bruges ikke (beer=0), men undgaar fejl
+    ringGroupMin:      1,
+    ringGroupMax:      1,  // maks 1 ring ad gangen paa jorden
+    ringGroupSpacing:  30,
+    highRingChance:    0,  // ingen hojt-placerede ringe paa grund-niveau
+
+    // ── n2: flyvende platforme ──
+    platformMinW:      70,   // platform-bredde
+    platformMaxW:      130,
+    platformGapMin:    160,  // min afstand mellem platforme
+    platformGapMax:    300,  // max afstand
+    platformY:         158,  // platform-overflade Y — hojt hop naar 40px OVER dette
+    n2BeerChance:      0.40, // 40% chance for oel paa platform (ellers ringe)
+    n2RingMin:         2,    // min ringe i raekke paa platform
+    n2RingMax:         4,    // max ringe i raekke paa platform
+    n2RingSpacing:     28,
+
+    // Svaerhedsgrad
+    difficultyDistance: 4000,
+    gapTightenMax:      0.35,
+    tentWeightBonus:    14,
+  },
+};
+
+// ── Fysik-konstanter (spiller & sprites) ───────────────
+const GRAVITY        = 0.38;
+const JUMP_VY        = -8.2;  // ubrugt (erstattet af CONFIG.jumpSmall + boost)
+const PLATFORM_H     = 10;    // platformens visuelle tykkelse
+const PLAYER_SX      = 92;
+const GROUND_Y       = 222;
+const PW             = 20;   // spiller hitbox bredde
+const PH             = 28;   // spiller hitbox hoejde
+const LANCE_OX       = 36;   // lansespids x-offset (kun til visning)
+const LANCE_OY       = 10;
+const LANCE_DUR      = 15;
+const JUMP_BUFFER    = 7;    // frames et hop-tryk huskes (foeles mere responsivt)
+
+// Sprite-maal og placering (afledt af CONFIG/jord)
+const TENT_W      = 36, TENT_H = 34;
+const RING_R      = 8;
+const RING_LOW_Y  = GROUND_Y - 26;  // ring i koerehoejde (rammes uden hop)
+const RING_HIGH_Y = GROUND_Y - 66;  // haevet ring (kraever hop)
+
+// Ravn (dukke-forhindring) — flyver i hovedhoejde; man skal DUKKE, ikke hoppe
+const BIRD_W = 24, BIRD_H = 11;     // hitbox
+const BIRD_Y = GROUND_Y - 28;       // top af hitbox (rammer staaende, misser dukkende)
+const DUCK_DROP = 12;               // hvor meget "hovedet" saenkes naar man dukker
+const RING_VALUE = 18;              // grundpoint pr. ring (ganges med combo-multiplier)
+
+// Afledte aliasser fra CONFIG (saa resten af koden kan bruge dem direkte)
+const HEALTH_MAX     = CONFIG.healthMax;
+const HEALTH_DRAIN   = CONFIG.healthDrain;
+const BEER_HEAL      = CONFIG.beerHeal;
+const TENT_DAMAGE    = CONFIG.tentDamage;
+const TENT_SPEED_LOSS = CONFIG.tentSpeedLoss;
+
+// ── Farvepalette ───────────────────────────────────────
+const C = {
+  // Himmel
+  skyTop:'#060412', skyMid:'#0d0824', skyBot:'#1a1240',
+  // Slotsiluet
+  castle:'#0b0918', castleAcc:'#120f22',
+  // Bakker
+  hill1:'#0a1606', hill2:'#0d1f08', hill3:'#122808',
+  // Jord/platforme
+  ground:'#16100a', dirt:'#221a10',
+  stoneA:'#3a2e22', stoneB:'#4e4030', stoneC:'#2a2018',
+  stoneTop:'#5a4a38', grass:'#2a4a18', grassHi:'#3a6420',
+  moss:'#1e3010',
+  // Guld/ringe
+  gold:'#c9a84c', goldHi:'#f0d060', goldMid:'#e0b840', goldDk:'#8a6828',
+  goldGlow:'rgba(201,168,76,0.3)',
+  // Oel
+  mugBrown:'#7a5010', mugDk:'#4a3008', mugHi:'#c07830',
+  beerYel:'#d4a820', beerHi:'#f0c830', beerFoam:'#ede8d4', beerFoamHi:'#ffffff',
+  // Telt
+  tentBase:'#5a1010', tentMid:'#801818', tentHi:'#a82020', tentShad:'#380a0a',
+  tentPole:'#4a3010', tentRope:'#7a6040', tentFlag:'#c9a84c',
+  // Rustning
+  silvA:'#989088', silvB:'#c0b8a8', silvC:'#d8d0c0', silvDk:'#484038',
+  silvShad:'#302820',
+  // Hjelm
+  helmA:'#383028', helmB:'#504540', helmHi:'#706050',
+  visor:'#c9a84c', visorHi:'#f0c840',
+  // Hud
+  skin:'#c8a060', skinShad:'#9a7040',
+  // Lance
+  lanceWood:'#7a5820', lanceWoodHi:'#a07830', lanceTip:'#c0b8a0', lanceTipHi:'#e8e0d0',
+  // Cykel
+  frameA:'#6a5028', frameB:'#8a6838', frameHi:'#b08848',
+  wheelRim:'#585040', wheelSpk:'#7a6840', wheelHub:'#2a2018',
+  chain:'#484030',
+  // Krop
+  red:'#8b1818', redHi:'#cc2828', redDk:'#501010',
+  // UI
+  uiBg:'rgba(6,4,2,0.88)', uiBorder:'rgba(201,168,76,0.4)',
+  uiText:'#d4c4a0', uiMuted:'#7a6a50',
+  // Misc
+  white:'#ede8d8', black:'#06040a',
+  torch:'#d06010', torchHi:'#f08020', torchGlow:'rgba(200,90,10,0.25)',
+};
+
+// ════════════════════════════════════════════════════════
+//  SPRITE-SYSTEM
+//  Laeser de individuelle PNG'er i SPRITE_DIR. Hver sprite har sort
+//  baggrund uden alfa, saa ved indlaesning:
+//    1) beskaeres evt. label-stumper vaek (cropT/B/L/R i kilde-px),
+//    2) den sorte baggrund gøres gennemsigtig via flood-fill fra kanten
+//       (bevarer moerke detaljer INDE i figuren),
+//    3) tegnes skaleret til spil-stoerrelse (bevarer hoejde/bredde-forhold).
+//  Mangler en fil, falder spillet tilbage til den indbyggede tegning.
+//  (Baggrundslagene sky/castle/hills/moon/ground er bevidst IKKE med —
+//   de eksporterede filer var fejlbeskaaret; vi beholder den tegnede baggrund.)
+// ════════════════════════════════════════════════════════
+const SPRITE_DIR     = './assets/sprites/ringridning_assets/';
+const SPRITE_DIR_ROOT = './assets/sprites/';  // filer direkte i sprites-mappen
+const BG_KEY = 34;   // pixels moerkere end dette (alle kanaler) = baggrund
+const SPRITE_DEFS = {
+  player_ride:   { frames: 4, fps: 12, dir: SPRITE_DIR_ROOT },
+  player_hurt:   { frames: 1, fps:  1, dir: SPRITE_DIR_ROOT },
+  ring_shimmer:  { frames: 4, fps: 10, dir: SPRITE_DIR_ROOT },  // direkte i sprites/
+  beer_bubble:   { frames: 3, fps:  6, dir: SPRITE_DIR_ROOT }, // ny version direkte i sprites/
+  tent_flag:     { frames: 3, fps:  6 },
+  torch_flicker: { frames: 4, fps: 12 },
+};
+
+// Spil-stoerrelser (kan finjusteres her)
+const PLAYER_GH = 46, PLAYER_OX = -12, PLAYER_OY = -14;
+const RING_GH   = 28;
+const BEER_GH   = 30;
+const TENT_GW   = 38;   // teltets bredde i spil-px (drevet af bredde)
+const TENT_HIT_W = 22, TENT_HIT_H = 24;  // teltets KOLLISIONS-box (mindre end visuelt = nemmere at hoppe over)
+const TORCH_GH  = 28;
+const BIRD_GH   = 18;   // ravnens tegne-hoejde
+
+const SPR = {};
+function loadSprites() {
+  for (const name in SPRITE_DEFS) {
+    const def = SPRITE_DEFS[name];
+    const img = new Image();
+    const rec = { ready:false, frames:def.frames||1, fps:def.fps||8, fw:0, fh:0, canvas:null };
+    img.onload = () => {
+      const W=img.width, H=img.height, N=rec.frames;
+      const slotW = W / N;
+
+      // 1) Tegn + keyOut
+      const tmp = document.createElement('canvas'); tmp.width=W; tmp.height=H;
+      const t = tmp.getContext('2d'); t.imageSmoothingEnabled=false;
+      t.drawImage(img, 0, 0);
+      keyOut(t, W, H);
+      const d = t.getImageData(0, 0, W, H).data;
+
+      // 2) Per-frame bounding box inden for sit equal-width slot
+      const boxes = [];
+      for (let f=0; f<N; f++) {
+        const sx=f*slotW|0, ex=((f+1)*slotW)|0;
+        let x0=ex, y0=H, x1=sx, y1=0;
+        for (let y=0; y<H; y++) for (let x=sx; x<ex; x++)
+          if (d[(y*W+x)*4+3] > 20) {
+            if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+          }
+        boxes.push(x0<ex
+          ? { x0, y0, w:x1-x0+1, h:y1-y0+1,
+              cx: (x0+x1)/2 - sx,  // center relativt til slot-start
+              by: y1 }
+          : null);
+      }
+
+      const valid = boxes.filter(Boolean);
+      if (!valid.length) { rec.ready=false; return; }
+
+      // 3) Faelles ankerpunkt T = gennemsnitlig cx.
+      //    Alle frames faar deres center placeret ved T i output-slottets koordinater.
+      //    Det eliminerer den vandrette hoppen der opstaar naar frames har
+      //    indholdet placeret forskelligt inden for kildefilens slots.
+      const T     = valid.reduce((s,b) => s+b.cx, 0) / valid.length;
+      const fh    = Math.max(...valid.map(b => b.h));
+      const halfW = Math.max(...valid.map(b => b.w/2));
+      const fw    = Math.ceil(Math.max(T, halfW) + halfW) + 4;
+
+      // 4) Sy output-strip: bund-justeret + ankeret vandret
+      const out = document.createElement('canvas'); out.width=fw*N; out.height=fh;
+      const o = out.getContext('2d'); o.imageSmoothingEnabled=false;
+      boxes.forEach((b,f) => {
+        if (!b) return;
+        const dx = Math.round(f*fw + T - b.w/2);  // vandret ankerpunkt
+        const dy = fh - b.h;                       // bund-justeret
+        o.drawImage(tmp, b.x0, b.y0, b.w, b.h, dx, dy, b.w, b.h);
+      });
+
+      rec.canvas=out; rec.fw=fw; rec.fh=fh; rec.ready=true;
+    };
+    img.onerror = () => { rec.ready=false; };
+    img.src = (def.dir || SPRITE_DIR) + name + '.png';
+    SPR[name] = rec;
+  }
+}
+
+// Gør sammenhaengende sort baggrund (fra kanten) gennemsigtig.
+// Flood-fill bevarer moerke pixels der er omsluttet af figuren.
+function keyOut(o, sw, sh) {
+  const id = o.getImageData(0, 0, sw, sh), d = id.data;
+  const dark = i => d[i] < BG_KEY && d[i+1] < BG_KEY && d[i+2] < BG_KEY;
+  const st = [];
+  const seed = (x, y) => { const i = (y*sw + x)*4; if (d[i+3] !== 0 && dark(i)) st.push(x, y); };
+  for (let x = 0; x < sw; x++) { seed(x, 0); seed(x, sh-1); }
+  for (let y = 0; y < sh; y++) { seed(0, y); seed(sw-1, y); }
+  while (st.length) {
+    const y = st.pop(), x = st.pop(), i = (y*sw + x)*4;
+    if (d[i+3] === 0 || !dark(i)) continue;
+    d[i+3] = 0;
+    if (x > 0)    st.push(x-1, y);
+    if (x < sw-1) st.push(x+1, y);
+    if (y > 0)    st.push(x, y-1);
+    if (y < sh-1) st.push(x, y+1);
+  }
+  o.putImageData(id, 0, 0);
+}
+
+function spr(name) { const r = SPR[name]; return (r && r.ready) ? r : null; }
+function animFrame(rec) {
+  if (rec.frames <= 1) return 0;
+  const period = Math.max(1, Math.round(60 / rec.fps));
+  return Math.floor(tick / period) % rec.frames;
+}
+// Tegn frame fi skaleret til dest-rektangel (dx,dy = top-venstre).
+function blitDest(rec, fi, dx, dy, dw, dh) {
+  ctx.drawImage(rec.canvas, fi*rec.fw, 0, rec.fw, rec.fh, dx, dy, dw, dh);
+}
+
+// ── Baggrunds-silhuetter fra sprites.png ────────────────
+//  Maane/slot/bakker kroppes ud af det transparente ark og skaleres til
+//  spil-stoerrelse. De laegges OVEN PAA den proceduregenererede stjernehimmel,
+//  saa vi beholder den parallax-rullende himmel men faar flot silhuet-grafik.
+const BG = {};
+let bgReady = false;
+function loadBackgroundSheet() {
+  const img = new Image();
+  img.onload = () => {
+    // crop (rx,ry,rw,rh) -> canvas i spil-hoejde gh (bevarer forhold)
+    const mk = (rx, ry, rw, rh, gh) => {
+      const sc = gh / rh, w = Math.max(1, Math.round(rw*sc));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = gh;
+      const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+      c.drawImage(img, rx, ry, rw, rh, 0, 0, w, gh);
+      return { cv, w, h: gh };
+    };
+    BG.moon   = mk(561, 909,  84, 82, 46);
+    BG.castle = mk(28, 1077, 253, 122, 96);
+    BG.hillsB = mk(327, 1124, 660, 62, 48);
+    BG.hillsM = mk(22, 1274, 308, 75, 56);
+    BG.hillsF = mk(352, 1282, 641, 67, 52);
+    bgReady = true;
+  };
+  img.onerror = () => { bgReady = false; };
+  img.src = './assets/sprites/sprites.png';
+}
+
+// Spejl-tiling: tegner billedet + en vandret-spejlet kopi skiftevis, saa
+// kanterne altid passer => ingen synlig soem, uanset om kilden er soemloes.
+function bgTile(b, parallax, bottomY) {
+  const w = b.w, top = bottomY - b.h, span = w*2;
+  const off = ((worldX*parallax) % span + span) % span;  // ruller mod venstre med verden
+  for (let sx = -off; sx < VW; sx += span) {
+    ctx.drawImage(b.cv, sx, top);
+    ctx.save();
+    ctx.translate(sx + span, top); ctx.scale(-1, 1);
+    ctx.drawImage(b.cv, 0, 0);
+    ctx.restore();
+  }
+}
+
+// ── State ──────────────────────────────────────────────
+let gState   = 'start';
+let score = 0, rings = 0, distance = 0, health = HEALTH_MAX;
+let speed = CONFIG.startSpeed, frame = 0, worldX = 0, spawnX = 0;
+let lanceOn = false, lanceTimer = 0, invFrames = 0;
+let finalScore = 0, finalRings = 0, finalDist = 0;
+let entryName = '';
+
+const player = {
+  x: PLAYER_SX, y: GROUND_Y - PH,
+  vy: 0, onGround: true, animF: 0, animT: 0,
+};
+
+let items = [], particles = [], popups = [];
+let platforms = [];         // flyvende blokke {x, y, w}
+let platformX = 0;          // spawn-markør for platforme
+let lastObstacle = false;
+let lastBeerSpawnX = 0;
+let jumpBuffer = 0;
+let jumpHeld = false;       // er hop-tasten holdt nede?
+let jumpBoostFrames = 0;    // antal frames med boost givet
+let tick = 0;             // kosmetisk tidstaeller (loeber altid, ogsaa i menuer)
+
+// Juice / feedback
+let shake = 0;            // skaermrystelse (afklinger)
+let hitStop = 0;          // frames hvor gameplay fryser efter et haardt hit
+let squash = 0;           // squash/stretch paa spilleren (+ = flad, - = hoej)
+let milestoneFlash = 0;   // glimt-timer ved hver 100 m
+let nextMilestone = 100;  // naeste 100 m-milepael
+let ringPop = 0, comboPop = 0; // "pop"-skalering paa HUD-tal
+
+// Combo
+let combo = 0;            // ringe i traek uden at misse
+let ringScore = 0;        // akkumuleret ring-score (med multiplier)
+
+// Input-tilstand
+let touchDuck = false;    // dukke-knap paa mobil
+let ducking = false;      // dukker spilleren lige nu?
+
+// ── Lyd (8-bit, syntetiseret — ingen filer) ─────────────
+let actx = null, masterGain = null, muted = false;
+function initAudio() {
+  if (actx) return;
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = actx.createGain();
+    masterGain.gain.value = 0.22;
+    masterGain.connect(actx.destination);
+  } catch { actx = null; }
+}
+function tone(freq, dur, type, vol, slideTo) {
+  if (!actx || muted) return;
+  const t = actx.currentTime;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || 'square';
+  o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol || 0.5, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(masterGain);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function noiseThud(dur, vol) {
+  if (!actx || muted) return;
+  const t = actx.currentTime, n = (actx.sampleRate * dur) | 0;
+  const buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random()*2 - 1) * (1 - i/n);
+  const s = actx.createBufferSource(); s.buffer = buf;
+  const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380;
+  const g = actx.createGain(); g.gain.value = vol || 0.5;
+  s.connect(f); f.connect(g); g.connect(masterGain); s.start();
+}
+const sfx = {
+  jump:      ()  => tone(340, 0.12, 'square', 0.4, 600),
+  ring:      (m) => tone(620 + m*110, 0.12, 'triangle', 0.45, 940 + m*110),
+  beer:      ()  => { tone(520, 0.07, 'square', 0.4, 320); setTimeout(()=>tone(300,0.1,'square',0.35,200), 60); },
+  tent:      ()  => { noiseThud(0.18, 0.5); tone(120, 0.18, 'square', 0.4, 70); },
+  milestone: ()  => { tone(880, 0.10, 'square', 0.5); setTimeout(()=>tone(1320,0.16,'square',0.5), 95); },
+  death:     ()  => { tone(420, 0.18, 'sawtooth', 0.5, 130); setTimeout(()=>tone(210,0.32,'sawtooth',0.5,70), 130); },
+};
+
+// ── Combo / popups / juice-helpers ──────────────────────
+function comboMult() { return Math.min(1 + ((combo / 3) | 0), 6); }  // x1..x6
+
+function addPopup(x, y, text, col, big) {
+  popups.push({ x, y, vy: -0.5, life: 48, max: 48, text, col, big: !!big });
+  if (popups.length > 24) popups.shift();
+}
+
+function spawnDust(x, y, n) {
+  for (let i = 0; i < n; i++) particles.push({
+    x: x + (Math.random()-.5)*8, y,
+    vx: (Math.random()-.5)*1.6 - 0.6, vy: -Math.random()*1.4,
+    col: Math.random() < 0.5 ? C.dirt : C.stoneB,
+    life: 14 + Math.random()*12 | 0, sz: 1 + Math.random()*2,
+  });
+}
+
+function hitObstacle(px, py) {
+  health -= TENT_DAMAGE; invFrames = 60;
+  speed = Math.max(CONFIG.startSpeed, speed - TENT_SPEED_LOSS);
+  combo = 0;
+  shake = 7; hitStop = 4;
+  boom(px, py, C.redHi, 12);
+  sfx.tent();
+}
+
+// ── Input ──────────────────────────────────────────────
+const keys = {};
+let doJump = false, doLance = false;
+
+document.addEventListener('keydown', e => {
+  initAudio();
+  if (actx && actx.state === 'suspended') actx.resume();
+  if (keys[e.code]) return;
+  keys[e.code] = true;
+  if (['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
+  if (['ArrowUp','KeyW'].includes(e.code)) { doJump = true; jumpHeld = true; }
+  if (['Space','KeyX'].includes(e.code)) { doJump = true; jumpHeld = true; doLance = true; }
+  if (e.code === 'KeyM') muted = !muted;
+  if (e.code === 'Escape') {
+    if (gState === 'playing') gState = 'paused';
+    else if (gState === 'paused') gState = 'playing';
+    else if (gState === 'entry') { gState = 'start'; resetAll(); }
+  }
+  if (gState === 'entry') handleNameKey(e);
+});
+document.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  if (['ArrowUp','KeyW','Space','KeyX'].includes(e.code)) jumpHeld = false;
+});
+
+const btnJumpEl = document.getElementById('btnJump');
+btnJumpEl.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(actx&&actx.state==='suspended')actx.resume(); doJump = true; jumpHeld = true; doLance = true; }, { passive:false });
+btnJumpEl.addEventListener('touchend',   e => { e.preventDefault(); jumpHeld = false; }, { passive:false });
+const btnDuck = document.getElementById('btnDuck');
+btnDuck.addEventListener('touchstart', e => { e.preventDefault(); touchDuck = true; }, { passive:false });
+btnDuck.addEventListener('touchend',   e => { e.preventDefault(); touchDuck = false; }, { passive:false });
+
+function handleNameKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); submitScore(); }
+  else if (e.key === 'Backspace') entryName = entryName.slice(0,-1);
+  else if (e.key.length === 1 && entryName.length < 12) entryName += e.key.toUpperCase();
+}
+
+// ── Verden ──────────────────────────────────────────────
+function resetAll() {
+  score = rings = distance = 0;
+  health = HEALTH_MAX; speed = CONFIG.startSpeed;
+  frame = 0; worldX = 0;
+  lanceOn = false; lanceTimer = 0; invFrames = 0;
+  player.y = GROUND_Y - PH; player.vy = 0;
+  player.onGround = true; player.animF = 0; player.animT = 0;
+  entryName = '';
+  items = []; particles = []; popups = []; platforms = [];
+  lastObstacle = false; jumpBuffer = 0; lastBeerSpawnX = 0;
+  jumpHeld = false; jumpBoostFrames = 0;
+  shake = 0; hitStop = 0; squash = 0; milestoneFlash = 0; nextMilestone = 100;
+  ringPop = 0; comboPop = 0; combo = 0; ringScore = 0;
+  spawnX    = VW + 60;
+  platformX = VW + 400;  // foerste platform lidt laengere fremme
+  generate();
+}
+
+// Svaerhedsgrad 0..1 ud fra hvor langt man er naaet
+function difficulty() {
+  return Math.min(worldX / CONFIG.gen.difficultyDistance, 1);
+}
+
+function generate() {
+  while (spawnX    < worldX + VW * 2.5) spawnNext();
+  while (platformX < worldX + VW * 2.5) spawnNextPlatform();
+}
+
+function spawnNextPlatform() {
+  const g = CONFIG.gen;
+  const d = difficulty();
+  const pw = g.platformMinW + Math.random() * (g.platformMaxW - g.platformMinW);
+  const py = g.platformY;
+
+  platforms.push({ x: platformX, y: py, w: pw });
+
+  // n2-items: oel ELLER ringe i raekke
+  if (Math.random() < g.n2BeerChance) {
+    // Oel midt paa platformen
+    items.push({ type:'beer', x: platformX + pw/2, y: py - 16, alive: true });
+  } else {
+    // 2-4 ringe i raekke over platformen
+    const n = g.n2RingMin + Math.floor(Math.random() * (g.n2RingMax - g.n2RingMin + 1));
+    const totalW = (n - 1) * g.n2RingSpacing;
+    const startX = platformX + (pw - totalW) / 2;  // centreret over platformen
+    for (let i = 0; i < n; i++) {
+      items.push({ type:'ring', x: startX + i * g.n2RingSpacing,
+                   y: py - 22, r: RING_R, pulse: Math.random()*6.28, alive: true });
+    }
+  }
+
+  const gap = g.platformGapMin + Math.random() * (g.platformGapMax - g.platformGapMin);
+  platformX += pw + gap;
+}
+
+// Placér ét objekt ved spawnX og ryk markoeren frem med en passende afstand.
+// Fordi alt placeres paa én tidslinje med en mindste-afstand, kan sprites
+// aldrig overlappe eller klumpe sig sammen.
+function spawnNext() {
+  const g = CONFIG.gen;
+  const d = difficulty();
+  const tighten = 1 - g.gapTightenMax * d;
+
+  // Vaelg objekttype efter vaegt.
+  // En forhindring (telt ELLER ravn) maa aldrig foelge lige efter en anden
+  // forhindring — saa er der altid plads til at reagere og undgaa den naeste.
+  const wRing = g.weightRing;
+  const wBeer = g.weightBeer;
+  const wTent = lastObstacle ? 0 : g.weightTent + g.tentWeightBonus * d;
+  const wBird = lastObstacle ? 0 : g.weightBird + g.tentWeightBonus * d * 0.5;
+  const roll  = Math.random() * (wRing + wBeer + wTent + wBird);
+
+  let extraGap = 0;
+  if (roll < wRing) {
+    spawnRingGroup();
+    lastObstacle = false;
+  } else if (roll < wRing + wBeer) {
+    // Oel kun hvis der ikke allerede er én i banen OG der er gaaet langt nok
+    const beerInPlay = items.some(i => i.alive && i.type === 'beer');
+    if (!beerInPlay && spawnX - lastBeerSpawnX >= g.minBeerGap) {
+      items.push({ type:'beer', x:spawnX, y:GROUND_Y - 16, alive:true });
+      lastBeerSpawnX = spawnX;
+    } else {
+      spawnRingGroup();   // for tidligt til ny oel -> ring i stedet
+    }
+    lastObstacle = false;
+  } else if (roll < wRing + wBeer + wTent) {
+    items.push({ type:'tent', x:spawnX, y:GROUND_Y - TENT_H, w:TENT_W, h:TENT_H, alive:true });
+    extraGap = g.gapAfterTent;
+    lastObstacle = true;
+  } else {
+    items.push({ type:'bird', x:spawnX, y:BIRD_Y, w:BIRD_W, h:BIRD_H, bob:Math.random()*6.28, alive:true });
+    extraGap = g.gapAfterTent;
+    lastObstacle = true;
+  }
+
+  const gap = (g.minGap + Math.random() * (g.maxGap - g.minGap)) * tighten + extraGap;
+  spawnX += gap;
+}
+
+function spawnRingGroup() {
+  const g = CONFIG.gen;
+  const n = g.ringGroupMin + Math.floor(Math.random() * (g.ringGroupMax - g.ringGroupMin + 1));
+  const high = Math.random() < g.highRingChance;
+  const baseY = high ? RING_HIGH_Y : RING_LOW_Y;
+  for (let i = 0; i < n; i++) {
+    items.push({ type:'ring', x:spawnX + i * g.ringGroupSpacing, y:baseY, r:RING_R, pulse:Math.random()*6.28, high, alive:true });
+  }
+  spawnX += (n - 1) * g.ringGroupSpacing;  // ryk forbi hele gruppen
+}
+
+// ── Update ──────────────────────────────────────────────
+function update() {
+  if (gState !== 'playing') return;
+  frame++;
+  if (frame % CONFIG.speedRampEvery === 0 && speed < CONFIG.maxSpeed)
+    speed = Math.min(CONFIG.maxSpeed, speed + CONFIG.speedRampAmount);
+  worldX  += speed;
+  distance = Math.floor(worldX / 10);
+  score    = distance + ringScore;
+
+  // Milepael hver 100 m: glimt + ding + popup
+  if (distance >= nextMilestone) {
+    addPopup(VW/2, VH/2 - 26, nextMilestone + ' M!', C.goldHi, true);
+    milestoneFlash = 16; sfx.milestone();
+    nextMilestone += 100;
+  }
+
+  health -= HEALTH_DRAIN;
+  if (health <= 0) { health = 0; triggerDeath(); return; }
+  if (invFrames > 0) invFrames--;
+
+  player.vy += GRAVITY;
+  if (player.vy > 12) player.vy = 12;
+  player.y += player.vy;
+
+  // Variabelt hop: kort tryk = lille hop, hold = hoejt hop.
+  // Buffer: et tryk huskes nogle frames saa hop lige foer landing udloeses.
+  if (doJump) { jumpBuffer = JUMP_BUFFER; doJump = false; }
+  if (jumpBuffer > 0 && player.onGround) {
+    player.vy = CONFIG.jumpSmall;   // start altid med lille hop
+    player.onGround = false; jumpBuffer = 0; jumpBoostFrames = 0;
+    squash = -0.5; sfx.jump();
+  }
+  if (jumpBuffer > 0) jumpBuffer--;
+
+  // Boost mens tasten holdes: tilfoej ekstra opadgaaende kraft i op til MAX frames.
+  // Stop tidligt hvis tasten slippes eller spilleren begynder at falde.
+  if (jumpHeld && !player.onGround && player.vy < 0 && jumpBoostFrames < CONFIG.jumpBoostMaxFrames) {
+    player.vy += CONFIG.jumpBoostPerFrame;
+    jumpBoostFrames++;
+  }
+  if (!jumpHeld) jumpBoostFrames = CONFIG.jumpBoostMaxFrames; // kill boost ved slip
+
+  // Dukke: ned-tast saenker hovedet (paa jorden) og giver hurtigere fald i luften
+  const wantDuck = keys['ArrowDown'] || keys['KeyS'] || touchDuck;
+  ducking = wantDuck;
+  if (wantDuck && !player.onGround) player.vy += 0.6;  // fast-fald
+
+  if (doLance && !lanceOn) { lanceOn = true; lanceTimer = LANCE_DUR; }  // kun visuelt stoed
+  doLance = false;
+  if (lanceTimer > 0) lanceTimer--;
+  else lanceOn = false;
+
+  if (player.onGround) {
+    player.animT++;
+    if (player.animT >= 6) { player.animT = 0; player.animF ^= 1; }
+  }
+
+  // Jord-kollision
+  const wasGround = player.onGround;
+  if (player.y + PH >= GROUND_Y && player.vy >= 0) {
+    player.y = GROUND_Y - PH; player.vy = 0; player.onGround = true;
+    if (!wasGround) { squash = 0.6; spawnDust(player.x + PW/2, GROUND_Y, 7); }
+  } else {
+    player.onGround = false;
+  }
+
+  // Platform-kollision: land ovenpaa, fald frit igennem fra neden.
+  for (const pl of platforms) {
+    const sx = pl.x - worldX;
+    if (sx > VW + 10 || sx + pl.w < -10) continue;
+    if (player.x + PW - 4 > sx && player.x + 4 < sx + pl.w &&
+        player.y + PH > pl.y && player.y + PH < pl.y + PLATFORM_H + 16 &&
+        player.vy >= 0) {
+      player.y = pl.y - PH; player.vy = 0; player.onGround = true;
+      jumpBoostFrames = CONFIG.jumpBoostMaxFrames; // nulstil boost ved landing
+      if (!wasGround) { squash = 0.5; spawnDust(player.x + PW/2, pl.y, 5); }
+    }
+  }
+
+  // Spillerens hitbox — naar man dukker, saenkes "hovedet" (top ned, lavere)
+  const ducked = ducking && player.onGround;
+  const ptop = player.y + (ducked ? DUCK_DROP : 0);
+  const ph   = PH - (ducked ? DUCK_DROP : 0);
+
+  // Item-kollision
+  for (const it of items) {
+    if (!it.alive) continue;
+    const ix = it.x - worldX;
+    if (ix < -40 || ix > VW+40) continue;
+
+    if (it.type === 'beer') {
+      if (ix+8 > player.x && ix-8 < player.x+PW &&
+          it.y+14 > ptop && it.y < ptop+ph) {
+        it.alive = false;
+        health = Math.min(HEALTH_MAX, health + BEER_HEAL);
+        boom(ix, it.y, C.beerYel, 12);
+        addPopup(ix, it.y - 8, '+ØL', C.beerHi, false);
+        sfx.beer();
+      }
+    } else if (it.type === 'tent' && invFrames === 0) {
+      // Mindre kollisions-box centreret paa teltets fod => nemmere at hoppe over
+      const cx = ix + it.w/2, hl = cx - TENT_HIT_W/2, hr = cx + TENT_HIT_W/2;
+      const htop = GROUND_Y - TENT_HIT_H;
+      if (hl < player.x+PW-2 && hr > player.x+2 && htop < ptop+ph-2) {
+        hitObstacle(player.x+10, player.y+8);
+        if (health <= 0) { health = 0; triggerDeath(); return; }
+      }
+    } else if (it.type === 'bird' && invFrames === 0) {
+      if (ix < player.x+PW-2 && ix+it.w > player.x+2 &&
+          it.y < ptop+ph-1 && it.y+it.h > ptop+1) {
+        hitObstacle(player.x+10, ptop+4);
+        if (health <= 0) { health = 0; triggerDeath(); return; }
+      }
+    } else if (it.type === 'ring') {
+      it.pulse += 0.09;
+      // Misset LAV ring (passeret uden opsamling) nulstiller combo.
+      // Hævede ringe er valgfri bonus og bryder ikke comboen.
+      if (!it.high && !it.passed && ix < player.x - 10) { it.passed = true; combo = 0; }
+      const m = it.r + 4;  // lille opsamlings-margen
+      if (ix + m > player.x && ix - m < player.x + PW &&
+          it.y + m > ptop && it.y - m < ptop + ph) {
+        it.alive = false; rings++; combo++;
+        const mult = comboMult();
+        const pts = RING_VALUE * mult;
+        ringScore += pts;
+        score = distance + ringScore;
+        boom(ix, it.y, C.goldHi, 14 + mult*3);
+        addPopup(ix, it.y - 6, '+' + pts, C.goldHi, false);
+        ringPop = 1; if (mult > 1) comboPop = 1;
+        sfx.ring(mult);
+      }
+    }
+  }
+
+  // Partikler
+  for (const p of particles) { p.x+=p.vx; p.y+=p.vy; p.vy+=0.16; p.life--; }
+  particles = particles.filter(p => p.life > 0);
+
+  // Score-popups (svaever op, fader)
+  for (const p of popups) { p.y += p.vy; p.life--; }
+  popups = popups.filter(p => p.life > 0);
+
+  // Juice-decay
+  if (shake > 0)          shake *= 0.85;
+  squash *= 0.80;
+  if (ringPop > 0)        ringPop  *= 0.85;
+  if (comboPop > 0)       comboPop *= 0.88;
+  if (milestoneFlash > 0) milestoneFlash--;
+
+  items     = items.filter(i => i.x - worldX > -100);
+  platforms = platforms.filter(p => p.x + p.w - worldX > -60);
+  generate();
+}
+
+function boom(x, y, col, n) {
+  for (let i = 0; i < n; i++) particles.push({
+    x, y, vx:(Math.random()-.5)*4, vy:Math.random()*-3.5-.5,
+    col, life:20+Math.random()*22|0, sz:1.5+Math.random()*2,
+  });
+}
+
+function triggerDeath() {
+  gState = 'dead';
+  finalScore = score; finalRings = rings; finalDist = distance;
+  shake = 10; sfx.death();
+}
+
+// ── Baggrundslag ───────────────────────────────────────
+function drawSky() {
+  const g = ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0, C.skyTop);
+  g.addColorStop(0.45, C.skyMid);
+  g.addColorStop(1, C.skyBot);
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,VW,VH);
+}
+
+function drawStars() {
+  const STARS = [
+    [22,14,2],[50,9,1],[80,22,1],[108,6,2],[140,16,1],[172,10,1],[200,20,1],[232,8,2],[265,13,1],[292,6,1],[320,18,1],[355,11,2],[385,22,1],[420,8,1],[455,15,1],
+    [38,30,1],[90,35,1],[130,26,1],[175,32,1],[215,28,1],[258,34,1],[305,29,1],[348,36,1],[400,31,1],[445,27,1],
+    [15,44,1],[65,48,1],[105,40,1],[155,52,1],[205,46,1],[255,42,1],[300,50,1],[350,44,1],[400,48,1],[450,43,1],
+  ];
+  for (const [sx,sy,sz] of STARS) {
+    const px = ((sx*13 - worldX*0.05) % (VW+30) + VW+30) % (VW+30);
+    const bright = 0.5 + 0.5*Math.sin(tick*0.03 + sx);
+    ctx.fillStyle = `rgba(220,210,190,${0.4+bright*0.5})`;
+    ctx.fillRect(px|0, sy, sz, sz);
+  }
+}
+
+function drawMoon() {
+  const mx = ((360 - worldX*0.015) % (VW+200) + VW+200) % (VW+200);
+  const my = 38;
+  if (bgReady && BG.moon) { ctx.drawImage(BG.moon.cv, (mx - BG.moon.w/2)|0, (my - BG.moon.h/2)|0); return; }
+  // Glow
+  const gl = ctx.createRadialGradient(mx,my,0,mx,my,36);
+  gl.addColorStop(0,'rgba(220,195,120,0.18)');
+  gl.addColorStop(1,'rgba(220,195,120,0)');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx,my,36,0,6.28); ctx.fill();
+  // Maane
+  ctx.fillStyle = '#ddd08a'; ctx.beginPath(); ctx.arc(mx,my,18,0,6.28); ctx.fill();
+  ctx.fillStyle = '#d8c870'; ctx.beginPath(); ctx.arc(mx-3,my-2,14,0,6.28); ctx.fill();
+  // Halvmaane-skygge
+  ctx.fillStyle = C.skyMid; ctx.beginPath(); ctx.arc(mx+8,my-3,15,0,6.28); ctx.fill();
+  // Kratere
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.beginPath(); ctx.arc(mx-4,my+3,3,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx-8,my-4,2,0,6.28); ctx.fill();
+}
+
+function drawCastle() {
+  if (bgReady && BG.castle) { bgTile(BG.castle, 0.10, 226); return; }
+  // Slotsiluet - parallax 0.07x
+  const off = (-(worldX*0.07)) % (VW*2.2);
+  for (let repeat = 0; repeat < 3; repeat++) {
+    const bx = (off + repeat * VW * 2.2) | 0;
+    drawCastleAt(bx);
+  }
+}
+
+function drawCastleAt(bx) {
+  const by = 100;
+  ctx.fillStyle = C.castle;
+
+  // Mur
+  ctx.fillRect(bx, by+28, 300, 80);
+  // Murtinder
+  for (let i = 0; i < 300; i += 16)
+    if ((i/16|0) % 2 === 0) ctx.fillRect(bx+i, by+18, 14, 12);
+
+  // Taarne
+  const towers = [[0,-30,30,110],[100,-45,36,130],[200,-28,30,110]];
+  for (const [tx,ty,tw,th] of towers) {
+    ctx.fillRect(bx+tx, by+ty, tw, th);
+    // Taarntinder
+    for (let i = 0; i < tw; i += tw/3|0)
+      ctx.fillRect(bx+tx+i, by+ty-10, (tw/3|0)-3, 10);
+    // Vindue
+    ctx.fillStyle = 'rgba(201,168,76,0.12)';
+    ctx.fillRect(bx+tx+(tw/2-4|0), by+ty+20, 8, 12);
+    ctx.fillStyle = C.castle;
+  }
+
+  // Slotslys (blødt fakkel-skaer)
+  const cg = ctx.createRadialGradient(bx+115, by-12, 0, bx+115, by-12, 20);
+  cg.addColorStop(0, 'rgba(220,120,30,0.16)');
+  cg.addColorStop(1, 'rgba(200,100,20,0)');
+  ctx.fillStyle = cg;
+  ctx.beginPath(); ctx.arc(bx+115, by-12, 20, 0, 6.28); ctx.fill();
+  ctx.fillStyle = '#d07020';
+  ctx.fillRect(bx+114, by-14, 2, 6);
+}
+
+function drawHills() {
+  if (bgReady && BG.hillsB) {
+    bgTile(BG.hillsB, 0.18, VH);
+    bgTile(BG.hillsM, 0.30, VH);
+    bgTile(BG.hillsF, 0.50, VH);
+    return;
+  }
+  // Bagerste bakker - parallax 0.18x
+  const off1 = (-(worldX*0.18)) % (VW*2);
+  for (let rep = 0; rep < 3; rep++) {
+    const bx = off1 + rep * VW * 2;
+    ctx.fillStyle = C.hill1;
+    ctx.beginPath(); ctx.moveTo(bx, VH);
+    for (let x = 0; x < VW*2; x += 120) {
+      ctx.bezierCurveTo(bx+x+30,VH-90, bx+x+90,VH-80, bx+x+120,VH-40);
+    }
+    ctx.lineTo(bx+VW*2, VH); ctx.closePath(); ctx.fill();
+  }
+
+  // Mellemste bakker - parallax 0.3x
+  const off2 = (-(worldX*0.30)) % (VW*1.8);
+  for (let rep = 0; rep < 3; rep++) {
+    const bx = off2 + rep * VW * 1.8;
+    ctx.fillStyle = C.hill2;
+    ctx.beginPath(); ctx.moveTo(bx, VH);
+    for (let x = 0; x < VW*1.8; x += 90) {
+      ctx.bezierCurveTo(bx+x+22,VH-55, bx+x+68,VH-50, bx+x+90,VH-25);
+    }
+    ctx.lineTo(bx+VW*1.8, VH); ctx.closePath(); ctx.fill();
+
+    // Traeer paa bakkerne
+    for (let tx = 20; tx < VW*1.8; tx += 55 + (tx%40)) {
+      drawTree(bx+tx, VH-25 - Math.sin(tx*0.08)*18);
+    }
+  }
+
+  // Foran bakker - parallax 0.5x
+  const off3 = (-(worldX*0.50)) % (VW*1.5);
+  for (let rep = 0; rep < 3; rep++) {
+    const bx = off3 + rep * VW * 1.5;
+    ctx.fillStyle = C.hill3;
+    ctx.beginPath(); ctx.moveTo(bx, VH);
+    for (let x = 0; x < VW*1.5; x += 70) {
+      ctx.bezierCurveTo(bx+x+18,VH-32, bx+x+52,VH-28, bx+x+70,VH-14);
+    }
+    ctx.lineTo(bx+VW*1.5, VH); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawTree(x, y) {
+  ctx.fillStyle = '#0a1a06';
+  // Krone (3 lag)
+  ctx.beginPath(); ctx.moveTo(x, y-22); ctx.lineTo(x+10, y-8); ctx.lineTo(x-10, y-8); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x, y-30); ctx.lineTo(x+8, y-18); ctx.lineTo(x-8, y-18); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x, y-37); ctx.lineTo(x+6, y-26); ctx.lineTo(x-6, y-26); ctx.closePath(); ctx.fill();
+  // Stamme
+  ctx.fillStyle = '#1a1006';
+  ctx.fillRect(x-2, y-8, 4, 10);
+}
+
+// ── Flyvende platform-tegning ────────────────────────────
+function drawFloatingPlatform(pl) {
+  const sx = (pl.x - worldX) | 0;
+  const w  = pl.w | 0;
+  if (sx + w < -2 || sx > VW + 2) return;
+
+  // Hoved-sten (lidt lysere end jord saa det skiller sig ud)
+  ctx.fillStyle = C.stoneB;
+  ctx.fillRect(sx, pl.y, w, PLATFORM_H);
+
+  // Top-kant + graes
+  ctx.fillStyle = C.stoneTop;
+  ctx.fillRect(sx, pl.y, w, 2);
+  ctx.fillStyle = C.grass;
+  ctx.fillRect(sx, pl.y, w, 1);
+
+  // Graes-straa
+  ctx.fillStyle = C.grassHi;
+  for (let gx = 3; gx < w - 2; gx += 5) ctx.fillRect(sx + gx, pl.y - 1, 1, 2);
+
+  // Bund-skygge (giver "svaevert" loek)
+  ctx.fillStyle = C.stoneSh;
+  ctx.fillRect(sx, pl.y + PLATFORM_H - 2, w, 2);
+
+  // Stenfoeger
+  ctx.fillStyle = C.stoneC;
+  for (let bx = 0; bx < w; bx += 18) ctx.fillRect(sx + bx, pl.y + 2, 1, PLATFORM_H - 4);
+}
+
+// ── Jord-tegning ────────────────────────────────────────
+//  Ét sammenhaengende baand. Alt indekseres efter verdens-position
+//  (worldX), saa moenstret scroller soemloest uden spring/soemme.
+function drawGround() {
+  const top = GROUND_Y;
+  const H   = VH - top;
+
+  // Bund-fyld
+  ctx.fillStyle = C.dirt;
+  ctx.fillRect(0, top, VW, H);
+
+  // Sten-blokke (soemloest via verdens-blokindeks)
+  const BLOCK = 18;
+  const startIdx = Math.floor(worldX / BLOCK);
+  const frac = worldX - startIdx * BLOCK;
+  for (let i = -1; i * BLOCK - frac < VW; i++) {
+    const wi = startIdx + i;
+    const sx = i * BLOCK - frac;
+    ctx.fillStyle = (wi % 2 === 0) ? C.stoneA : C.stoneB;
+    ctx.fillRect(sx, top + 4, BLOCK - 1, 12);
+    ctx.fillStyle = C.stoneTop;
+    ctx.fillRect(sx, top + 4, BLOCK - 1, 1);
+    ctx.fillRect(sx, top + 4, 1, 4);
+    ctx.fillStyle = C.stoneC;
+    ctx.fillRect(sx + BLOCK - 2, top + 5, 1, 10);
+  }
+
+  // Top-stribe + graes (fuld bredde => altid soemloest)
+  ctx.fillStyle = C.stoneTop; ctx.fillRect(0, top, VW, 3);
+  ctx.fillStyle = C.grass;    ctx.fillRect(0, top, VW, 2);
+
+  // Graes-straa (verdens-indekseret)
+  ctx.fillStyle = C.grassHi;
+  const GS = 5, gStart = Math.floor(worldX / GS), gFrac = worldX - gStart * GS;
+  for (let i = -1; i * GS - gFrac < VW; i++) {
+    const wi = gStart + i, sx = i * GS - gFrac;
+    ctx.fillRect(sx, top - 1, 1, 2);
+    if (wi % 2 === 0) ctx.fillRect(sx - 1, top - 2, 1, 1);
+  }
+
+  // Mos (verdens-indekseret)
+  ctx.fillStyle = C.moss;
+  const MS = 8, mStart = Math.floor(worldX / MS), mFrac = worldX - mStart * MS;
+  for (let i = -1; i * MS - mFrac < VW; i++)
+    ctx.fillRect(i * MS - mFrac, top + 15, 4, 2);
+
+  drawTorches(top);
+}
+
+// Fakler i jaevne intervaller (verdens-indekseret)
+function drawTorches(top) {
+  const TS = 240, tStart = Math.floor(worldX / TS), tFrac = worldX - tStart * TS;
+  for (let i = -1; i * TS - tFrac < VW; i++)
+    drawTorch(i * TS - tFrac, top, tStart + i);
+}
+
+function drawTorch(sx, top, seed) {
+  // torch_flicker-sprite har forkert placering per frame — bruger procedural tegning
+  const flicker = Math.sin(tick * 0.25 + seed * 1.7) * 1.5 | 0;
+  const flameY  = top - 20 + flicker;
+
+  // Blødt lysskaer (radial gradient der fader ud — ikke en flad skive)
+  const gl = ctx.createRadialGradient(sx, flameY, 0, sx, flameY, 22);
+  gl.addColorStop(0,   'rgba(240,150,40,0.30)');
+  gl.addColorStop(0.5, 'rgba(200,90,10,0.12)');
+  gl.addColorStop(1,   'rgba(200,90,10,0)');
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(sx, flameY, 22, 0, 6.28); ctx.fill();
+
+  // Stang
+  ctx.fillStyle = C.tentPole;
+  ctx.fillRect(sx - 1, top - 18, 2, 16);
+  // Ild (flimrer)
+  ctx.fillStyle = C.torchHi;
+  ctx.fillRect(sx - 2, top - 22 + flicker, 4, 6 - flicker);
+  ctx.fillStyle = C.torch;
+  ctx.fillRect(sx - 1, flameY, 2, 3);
+}
+
+// ── Item-tegning ────────────────────────────────────────
+function drawRing(x, y, it) {
+  x = x|0; y = y|0;
+  // ring_shimmer — procedural tegning
+  const r = it.r;
+  const glow = (Math.sin(it.pulse)*0.5+0.5);
+
+  // Glow-ring (kun streg, ikke fyld — midten er altid gennemsigtig)
+  ctx.strokeStyle = `rgba(240,208,80,${0.18 + glow*0.28})`;
+  ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.stroke();
+
+  // Mørk kant (dybde)
+  ctx.strokeStyle = C.goldDk;  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.stroke();
+
+  // Hoved-ring (guld)
+  ctx.strokeStyle = C.goldMid; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.stroke();
+
+  // Lyse kant
+  ctx.strokeStyle = C.goldHi;  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.stroke();
+
+  // Top-reflektion
+  ctx.strokeStyle = C.white; ctx.lineWidth = 1.2;
+  // Reflektion (lille lys bue øverst til venstre)
+  ctx.strokeStyle = C.white; ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.65;
+  ctx.beginPath(); ctx.arc(x-1, y-1, r-1, Math.PI*1.15, Math.PI*1.6); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawBeer(x, y) {
+  x = x|0; y = y|0;
+
+  // beer_bubble — procedural tegning
+
+  // Skygge
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(x-4, y+15, 12, 3);
+
+  // Krus-krop gradient
+  const bg = ctx.createLinearGradient(x-5,y,x+7,y);
+  bg.addColorStop(0, C.mugHi); bg.addColorStop(0.4, C.mugBrown); bg.addColorStop(1, C.mugDk);
+  ctx.fillStyle = bg;
+  ctx.fillRect(x-5, y, 12, 15);
+
+  // Oel-faelde (gul)
+  const yg = ctx.createLinearGradient(x-4,y+2,x+6,y+2);
+  yg.addColorStop(0, C.beerHi); yg.addColorStop(1, C.beerYel);
+  ctx.fillStyle = yg;
+  ctx.fillRect(x-4, y+2, 10, 11);
+
+  // Skum
+  ctx.fillStyle = C.beerFoam;
+  ctx.fillRect(x-5, y-4, 12, 6);
+  ctx.fillStyle = C.beerFoamHi;
+  ctx.fillRect(x-3, y-4, 4, 2);
+  ctx.fillRect(x+1, y-3, 3, 2);
+
+  // Haandtag
+  ctx.fillStyle = C.mugBrown;
+  ctx.fillRect(x+7, y+2, 4, 9);
+  ctx.fillStyle = C.mugDk;
+  ctx.fillRect(x+8, y+3, 2, 7);
+  ctx.fillStyle = C.mugHi;
+  ctx.fillRect(x+7, y+2, 2, 2);
+
+  // Bobler
+  if ((tick>>3)&1) {
+    ctx.fillStyle = 'rgba(240,220,150,0.7)';
+    ctx.fillRect(x-2, y+5, 2, 2);
+    ctx.fillRect(x+2, y+8, 2, 2);
+    ctx.fillRect(x-1, y+11, 1, 1);
+  }
+}
+
+function drawTent(x, y, w, h) {
+  x = x|0; y = y|0;
+
+  // tent_flag-sprite har forkert placering per frame — bruger procedural tegning
+
+  // Skygge
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(x+w/2, y+h+2, w*0.6, 3, 0, 0, 6.28);
+  ctx.fill();
+
+  // Hoved-telt-krop
+  const tg = ctx.createLinearGradient(x,y,x+w,y+h);
+  tg.addColorStop(0, C.tentHi); tg.addColorStop(0.5, C.tentMid); tg.addColorStop(1, C.tentShad);
+  ctx.fillStyle = tg;
+  ctx.beginPath();
+  ctx.moveTo(x+w/2, y);
+  ctx.lineTo(x+w, y+h);
+  ctx.lineTo(x, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Striben (lysere center)
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath();
+  ctx.moveTo(x+w/2, y+2);
+  ctx.lineTo(x+w/2+5, y+h);
+  ctx.lineTo(x+w/2-5, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Saum-linjer
+  ctx.strokeStyle = C.tentShad; ctx.lineWidth = 1;
+  [[0.3,0.15,0.5,1],[0.7,0.15,0.5,1]].forEach(([x1,y1,x2,y2]) => {
+    ctx.beginPath();
+    ctx.moveTo(x+w*x1, y+h*y1);
+    ctx.lineTo(x+w*x2, y+h*y2);
+    ctx.stroke();
+  });
+
+  // Teltindgang
+  ctx.fillStyle = C.tentShad;
+  ctx.beginPath();
+  ctx.moveTo(x+w/2-5, y+h);
+  ctx.lineTo(x+w/2, y+h*0.55);
+  ctx.lineTo(x+w/2+5, y+h);
+  ctx.closePath(); ctx.fill();
+
+  // Stang
+  const stangX = x+(w/2|0);
+  ctx.fillStyle = C.tentPole;
+  ctx.fillRect(stangX-1, y-6, 3, h+7);
+  ctx.fillStyle = C.lanceWoodHi;
+  ctx.fillRect(stangX-1, y-6, 1, h+7);
+
+  // Flag
+  ctx.fillStyle = C.tentFlag;
+  ctx.beginPath();
+  ctx.moveTo(stangX, y-6);
+  ctx.lineTo(stangX+9, y-2);
+  ctx.lineTo(stangX, y+3);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.goldHi;
+  ctx.fillRect(stangX, y-6, 1, 2);
+
+  // Bardun
+  ctx.strokeStyle = C.tentRope; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x-4, y+h+3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(stangX, y); ctx.lineTo(x+w+4, y+h+3); ctx.stroke();
+
+  // Bund-kant
+  ctx.fillStyle = C.tentHi;
+  ctx.fillRect(x, y+h-2, w, 2);
+}
+
+// ── Spiller-tegning ─────────────────────────────────────
+function drawPlayer() {
+  if (invFrames > 0 && (invFrames>>2)&1) return;   // blink ved skade
+
+  // Squash/stretch + dukke — skaleres om fødderne (pivot ved jorden),
+  // saa figuren bliver staaende paa jorden uanset deformation.
+  let sx = 1 + squash*0.35, sy = 1 - squash*0.35;
+  if (ducking && player.onGround) { sy *= 0.66; sx *= 1.14; }
+  const baseX = player.x + PW/2, baseY = player.y + PH;
+  ctx.save();
+  ctx.translate(baseX, baseY); ctx.scale(sx, sy); ctx.translate(-baseX, -baseY);
+  drawPlayerBody();
+  ctx.restore();
+}
+
+function drawPlayerBody() {
+  // Sprite-version: vaelg strip ud fra tilstand (med fallback hvis en mangler)
+  // Sprite-ridder deaktiveret — bruger procedural tegning der virker stabilt
+  const ps = null && spr('player_ride');
+  if (ps) {
+    // hjul/pedaler spinder med farten; tucket frame mens man er i luften
+    const fi = (ps === SPR.player_ride)
+      ? (player.onGround ? Math.floor(worldX/6) % ps.frames : 1 % ps.frames)
+      : animFrame(ps);
+    const dw = PLAYER_GH * ps.fw / ps.fh, dh = PLAYER_GH;
+    blitDest(ps, fi, player.x + PLAYER_OX, player.y + PLAYER_OY, dw, dh);
+    return;
+  }
+
+  const x = player.x | 0;
+  const y = player.y | 0;
+  const af = player.animF;
+  const WR = 10;
+  const fwx = x+20, bwx = x+2, wy = y+28;
+  const sa = (worldX * 0.13) % 6.28;
+
+  // Hjul
+  [fwx, bwx].forEach(wx => {
+    // Daek (tykt)
+    ctx.strokeStyle = '#201808'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(wx, wy, WR, 0, 6.28); ctx.stroke();
+
+    // Faelg
+    ctx.strokeStyle = C.wheelRim; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(wx, wy, WR, 0, 6.28); ctx.stroke();
+
+    // Eger
+    ctx.strokeStyle = C.wheelSpk; ctx.lineWidth = 1;
+    for (let s = 0; s < 6; s++) {
+      const a = sa + s * 1.047;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy);
+      ctx.lineTo(wx+Math.cos(a)*(WR-2), wy+Math.sin(a)*(WR-2));
+      ctx.stroke();
+    }
+
+    // Nav
+    ctx.fillStyle = C.wheelHub;
+    ctx.beginPath(); ctx.arc(wx, wy, 3, 0, 6.28); ctx.fill();
+    ctx.strokeStyle = C.wheelRim; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(wx, wy, 3, 0, 6.28); ctx.stroke();
+  });
+
+  // Kaede
+  ctx.strokeStyle = C.chain; ctx.lineWidth = 1;
+  ctx.setLineDash([2,2]);
+  ctx.beginPath(); ctx.moveTo(bwx, wy); ctx.lineTo(fwx, wy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Stel
+  ctx.strokeStyle = C.frameB; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(bwx, wy-1); ctx.lineTo(x+10, y+16); ctx.lineTo(fwx, wy-1); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x+10, y+16); ctx.lineTo(fwx-1, y+13); ctx.stroke();
+
+  // Highlight paa stel
+  ctx.strokeStyle = C.frameHi; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bwx, wy-2); ctx.lineTo(x+10, y+15); ctx.stroke();
+
+  // Styret
+  ctx.strokeStyle = C.silvDk; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(fwx-1, y+13); ctx.lineTo(fwx+2, y+7); ctx.stroke();
+  // Styrehaandtag
+  ctx.strokeStyle = C.silvA; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(fwx+1, y+6); ctx.lineTo(fwx+4, y+4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(fwx+1, y+7); ctx.lineTo(fwx+4, y+9); ctx.stroke();
+
+  // Saede
+  ctx.fillStyle = C.silvDk;
+  ctx.fillRect(x+7, y+14, 9, 3);
+  ctx.fillStyle = C.silvA;
+  ctx.fillRect(x+8, y+14, 7, 1);
+
+  // Ben (animeret pedaling)
+  const legSwing = af ? 3 : -3;
+  // Laer
+  ctx.fillStyle = C.silvDk;
+  ctx.fillRect(x+8,  y+17+legSwing, 4, 7);
+  ctx.fillRect(x+13, y+17-legSwing, 4, 7);
+  // Shins
+  ctx.fillStyle = C.silvA;
+  ctx.fillRect(x+8,  y+24+legSwing, 3, 5);
+  ctx.fillRect(x+13, y+24-legSwing, 3, 5);
+  // Foedder/spoerelaeder
+  ctx.fillStyle = C.helmA;
+  ctx.fillRect(x+7,  y+28+legSwing, 6, 2);
+  ctx.fillRect(x+12, y+28-legSwing, 6, 2);
+
+  // Krop (brystplade)
+  const bodyGrad = ctx.createLinearGradient(x+5, y+5, x+17, y+16);
+  bodyGrad.addColorStop(0, C.silvC); bodyGrad.addColorStop(0.5, C.silvB); bodyGrad.addColorStop(1, C.silvDk);
+  ctx.fillStyle = bodyGrad;
+  ctx.fillRect(x+5, y+5, 13, 13);
+
+  // Brystplade-detaljer
+  ctx.fillStyle = C.silvShad;
+  ctx.fillRect(x+5, y+12, 13, 1);
+  ctx.fillRect(x+11, y+5, 1, 13);
+  ctx.fillStyle = C.gold;
+  ctx.fillRect(x+7, y+8, 4, 2);
+  ctx.fillRect(x+12, y+8, 3, 2);
+  // Skulderplaader
+  ctx.fillStyle = C.silvB;
+  ctx.fillRect(x+4, y+5, 3, 4);
+  ctx.fillRect(x+16, y+5, 3, 4);
+  ctx.fillStyle = C.silvC;
+  ctx.fillRect(x+4, y+5, 1, 3);
+  ctx.fillRect(x+16, y+5, 1, 3);
+
+  // Hjelm
+  const helmGrad = ctx.createLinearGradient(x+6, y, x+16, y+7);
+  helmGrad.addColorStop(0, C.helmB); helmGrad.addColorStop(1, C.helmA);
+  ctx.fillStyle = helmGrad;
+  ctx.fillRect(x+6, y, 11, 7);
+  // Helm-top
+  ctx.fillStyle = C.helmHi;
+  ctx.fillRect(x+7, y, 9, 1);
+  ctx.fillRect(x+6, y, 1, 6);
+  // Visir
+  ctx.fillStyle = C.visor;
+  ctx.fillRect(x+7, y+4, 9, 2);
+  ctx.fillStyle = C.visorHi;
+  ctx.fillRect(x+8, y+4, 4, 1);
+  // Vandkam (hjelm-kams)
+  ctx.fillStyle = C.red;
+  ctx.fillRect(x+9, y-6, 4, 7);
+  ctx.fillRect(x+8, y-5, 6, 5);
+  ctx.fillStyle = C.redHi;
+  ctx.fillRect(x+10, y-6, 2, 3);
+
+  // Lanse
+  const angle = lanceOn ? 0 : -0.10;
+  const ll = 34;
+  const ltx = x+14 + Math.cos(angle)*ll;
+  const lty = y+8  + Math.sin(angle)*ll;
+
+  // Lanse-skaft (gradient)
+  const lsg = ctx.createLinearGradient(x+6, y+9, ltx, lty);
+  lsg.addColorStop(0, C.lanceWoodHi); lsg.addColorStop(1, C.lanceWood);
+  ctx.strokeStyle = lsg; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x+6, y+9); ctx.lineTo(ltx, lty); ctx.stroke();
+
+  ctx.strokeStyle = C.lanceWoodHi; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x+7, y+8); ctx.lineTo(ltx-2, lty-1); ctx.stroke();
+
+  // Lanse-spids
+  ctx.fillStyle = C.lanceTipHi;
+  ctx.fillRect((ltx-1)|0, (lty-2)|0, 6, 4);
+  ctx.fillStyle = C.lanceTip;
+  ctx.fillRect((ltx)|0, (lty-1)|0, 4, 2);
+  ctx.fillStyle = C.goldDk;
+  ctx.fillRect((ltx-2)|0, (lty-1)|0, 2, 2);
+
+  // Lanse-stik effekt
+  if (lanceOn) {
+    const alpha = lanceTimer / LANCE_DUR;
+    ctx.strokeStyle = `rgba(240,200,80,${alpha*0.9})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ltx+2, lty); ctx.lineTo(ltx+10, lty); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,200,${alpha*0.6})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ltx, lty-2); ctx.lineTo(ltx+8, lty-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ltx, lty+2); ctx.lineTo(ltx+8, lty+2); ctx.stroke();
+  }
+}
+
+// ── HUD ────────────────────────────────────────────────
+function drawHUD() {
+  // Helbreds-panel
+  ctx.fillStyle = C.uiBg;
+  ctx.fillRect(5, 5, 100, 22);
+  ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
+  ctx.strokeRect(5.5, 5.5, 99, 21);
+
+  // Helbreds-label
+  ctx.fillStyle = C.uiMuted; ctx.font = '6px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('HELBRED', 9, 14);
+
+  // Helbreds-bar
+  const bw = 84, bh = 6, bx = 9, by = 16;
+  ctx.fillStyle = '#1a0505';
+  ctx.fillRect(bx, by, bw, bh);
+
+  const pct = health / HEALTH_MAX;
+  const hg = ctx.createLinearGradient(bx, by, bx+bw*pct, by);
+  if (pct > 0.5) { hg.addColorStop(0,'#cc1a1a'); hg.addColorStop(1,'#ee3030'); }
+  else if (pct > 0.25) { hg.addColorStop(0,'#cc6600'); hg.addColorStop(1,'#ee8820'); }
+  else { hg.addColorStop(0,'#cc0000'); hg.addColorStop(1,'#ff1010'); }
+  ctx.fillStyle = hg;
+  ctx.fillRect(bx, by, (bw*pct)|0, bh);
+
+  ctx.strokeStyle = 'rgba(201,168,76,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeRect(bx-.5, by-.5, bw+1, bh+1);
+
+  // Oel-ikon ved siden af
+  drawBeer(117, 8);
+
+  // Score-panel (hoejre side)
+  ctx.fillStyle = C.uiBg;
+  ctx.fillRect(VW-105, 5, 100, 26);
+  ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
+  ctx.strokeRect(VW-104.5, 5.5, 99, 25);
+
+  // Linje 1: ringe (hoejre, med "pop" naar man samler)
+  const rp = 1 + ringPop*0.6;
+  ctx.save();
+  ctx.translate(VW-8, 16); ctx.scale(rp, rp);
+  ctx.fillStyle = C.gold; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('Ringe: ' + rings, 0, 0);
+  ctx.restore();
+
+  // Linje 2: fart (venstre) + distance (hoejre)
+  ctx.font = '6px monospace';
+  ctx.textAlign = 'right'; ctx.fillStyle = C.uiMuted;
+  ctx.fillText(distance + ' m', VW-8, 26);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = speed > 3.5 ? C.redHi : C.uiMuted;
+  ctx.fillText('Fart x' + speed.toFixed(1), VW-100, 26);
+
+  // Combo-multiplier (midt-top) — vises kun naar den er over x1
+  const mult = comboMult();
+  if (mult > 1) {
+    const cp = 1 + comboPop*0.7;
+    ctx.save();
+    ctx.translate(VW/2, 18); ctx.scale(cp, cp);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.font = 'bold 11px monospace';
+    ctx.fillText('COMBO x' + mult, 1, 1);
+    ctx.fillStyle = mult >= 4 ? C.redHi : C.goldHi;
+    ctx.fillText('COMBO x' + mult, 0, 0);
+    ctx.restore();
+  }
+
+  // Lyd-indikator (lille hoejttaler, nederst i venstre hjoerne)
+  drawSpeaker(10, VH-12, muted);
+}
+
+function drawSpeaker(x, y, off) {
+  ctx.fillStyle = off ? C.uiMuted : C.gold;
+  ctx.fillRect(x, y+2, 2, 4);            // kasse
+  ctx.beginPath();                        // kegle
+  ctx.moveTo(x+2, y+4); ctx.lineTo(x+6, y); ctx.lineTo(x+6, y+8); ctx.closePath(); ctx.fill();
+  if (off) {                              // skraastreg = lyd fra
+    ctx.strokeStyle = C.red; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, y-1); ctx.lineTo(x+9, y+9); ctx.stroke();
+  } else {                                // lyd-boelger
+    ctx.strokeStyle = C.gold; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x+6, y+4, 3, -0.7, 0.7); ctx.stroke();
+  }
+}
+
+// ── Overlay-skaerme ─────────────────────────────────────
+function overlay(a) {
+  ctx.fillStyle = `rgba(6,4,10,${a})`; ctx.fillRect(0,0,VW,VH);
+}
+function cText(t, x, y, font, col) {
+  ctx.font = font; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.fillText(t, x, y);
+}
+function hline(y, w) {
+  ctx.fillStyle = C.gold;
+  ctx.fillRect(VW/2-w/2, y, w, 1);
+}
+
+function drawStart() {
+  overlay(0.72);
+
+  // Dekorativ ramme
+  ctx.strokeStyle = 'rgba(201,168,76,0.3)'; ctx.lineWidth = 1;
+  ctx.strokeRect(VW/2-110, VH/2-66, 220, 132);
+  ctx.strokeStyle = 'rgba(201,168,76,0.12)'; ctx.lineWidth = 1;
+  ctx.strokeRect(VW/2-106, VH/2-62, 212, 124);
+
+  cText('RINGRIDNING', VW/2, VH/2-44, 'bold 18px monospace', C.goldHi);
+  cText('PAA CYKEL', VW/2, VH/2-29, 'bold 10px monospace', C.gold);
+  hline(VH/2-22, 160);
+
+  ctx.font = '7px monospace'; ctx.fillStyle = C.white; ctx.textAlign = 'center';
+  ctx.fillText('HOP over telte  -  DUK under ravne', VW/2, VH/2-11);
+  ctx.fillText('Rid igennem ringe i traek = COMBO', VW/2, VH/2+1);
+  ctx.fillText('Drik oel for at holde liv', VW/2, VH/2+13);
+  ctx.fillText('W/Pil op = hop   S/Pil ned = duk', VW/2, VH/2+27);
+
+  hline(VH/2+38, 160);
+
+  if ((tick>>4)&1) cText('-- TRYK FOR AT STARTE --', VW/2, VH/2+52, 'bold 8px monospace', C.goldHi);
+}
+
+function drawDead() {
+  overlay(0.80);
+
+  ctx.strokeStyle = 'rgba(139,24,24,0.5)'; ctx.lineWidth = 1;
+  ctx.strokeRect(VW/2-110, VH/2-64, 220, 128);
+
+  cText('DU ER FALDET!', VW/2, VH/2-44, 'bold 14px monospace', C.redHi);
+  hline(VH/2-36, 180);
+
+  ctx.font = '7px monospace'; ctx.fillStyle = C.uiText; ctx.textAlign = 'center';
+  ctx.fillText('Ringe samlede :  ' + finalRings, VW/2, VH/2-22);
+  ctx.fillText('Distance      :  ' + finalDist + ' m', VW/2, VH/2-12);
+
+  cText('SCORE: ' + finalScore, VW/2, VH/2+2, 'bold 11px monospace', C.goldHi);
+  hline(VH/2+9, 180);
+
+  if ((tick>>4)&1) cText('TRYK FOR AT FORSAETTE', VW/2, VH/2+24, '7px monospace', C.white);
+}
+
+function drawPause() {
+  overlay(0.68);
+  cText('PAUSE', VW/2, VH/2-8, 'bold 16px monospace', C.gold);
+  hline(VH/2, 120);
+  cText('ESC for at fortsaette', VW/2, VH/2+14, '7px monospace', C.uiText);
+}
+
+function drawEntry() {
+  overlay(0.88);
+
+  ctx.strokeStyle = C.uiBorder; ctx.lineWidth = 1;
+  ctx.strokeRect(VW/2-120, VH/2-58, 240, 116);
+
+  cText('TILFOEJ TIL HIGHSCORE', VW/2, VH/2-42, 'bold 9px monospace', C.gold);
+  cText('Score: ' + finalScore, VW/2, VH/2-28, 'bold 14px monospace', C.goldHi);
+  hline(VH/2-20, 200);
+
+  ctx.font = '7px monospace'; ctx.fillStyle = C.uiText; ctx.textAlign = 'center';
+  ctx.fillText('INDTAST DIT NAVN:', VW/2, VH/2-8);
+
+  // Input-felt
+  ctx.fillStyle = 'rgba(16,12,8,0.95)';
+  ctx.fillRect(VW/2-72, VH/2-4, 144, 18);
+  ctx.strokeStyle = C.gold; ctx.lineWidth = 1;
+  ctx.strokeRect(VW/2-72, VH/2-4, 144, 18);
+
+  const cursor = (tick>>4)&1 ? '_' : ' ';
+  cText(entryName + cursor, VW/2, VH/2+9, 'bold 10px monospace', C.goldHi);
+
+  hline(VH/2+18, 200);
+  ctx.font = '6px monospace'; ctx.fillStyle = C.uiMuted; ctx.textAlign = 'center';
+  ctx.fillText('ENTER for at gemme   |   ESC for at springe over', VW/2, VH/2+32);
+}
+
+// ── Hoved-draw ─────────────────────────────────────────
+function draw() {
+  drawSky();   // himmel altid uden rystelse, saa den fylder hele laerredet
+
+  ctx.save();
+  if (shake > 0.4) ctx.translate((Math.random()-.5)*shake, (Math.random()-.5)*shake);
+
+  drawStars();
+  drawMoon();
+  drawCastle();
+  drawHills();
+  drawGround();
+  for (const pl of platforms) drawFloatingPlatform(pl);
+
+  for (const it of items) {
+    if (!it.alive) continue;
+    const ix = it.x - worldX;
+    if (ix < -35 || ix > VW+35) continue;
+    if (it.type === 'ring') drawRing(ix, it.y, it);
+    else if (it.type === 'beer') drawBeer(ix|0, it.y|0);
+    else if (it.type === 'tent') drawTent(ix|0, it.y|0, it.w, it.h);
+    else if (it.type === 'bird') drawBird(ix, it.y, it);
+  }
+
+  drawPlayer();
+
+  for (const p of particles) {
+    ctx.fillStyle = p.col;
+    ctx.fillRect(p.x|0, p.y|0, Math.ceil(p.sz), Math.ceil(p.sz));
+  }
+
+  drawPopups();
+  ctx.restore();
+
+  // Milepael-glimt (hele skaermen, uden rystelse)
+  if (milestoneFlash > 0) {
+    ctx.fillStyle = `rgba(240,208,80,${milestoneFlash/16*0.22})`;
+    ctx.fillRect(0, 0, VW, VH);
+  }
+
+  drawHUD();
+
+  if (gState === 'start')  drawStart();
+  if (gState === 'dead')   drawDead();
+  if (gState === 'paused') drawPause();
+  if (gState === 'entry')  drawEntry();
+}
+
+function drawPopups() {
+  ctx.textAlign = 'center';
+  for (const p of popups) {
+    const a = Math.min(1, p.life / 14);
+    ctx.globalAlpha = a;
+    ctx.font = (p.big ? 'bold 13px' : 'bold 8px') + ' monospace';
+    // skygge + tekst
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(p.text, (p.x|0)+1, (p.y|0)+1);
+    ctx.fillStyle = p.col;
+    ctx.fillText(p.text, p.x|0, p.y|0);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Ravn — flyver i hovedhoejde; man skal dukke under den
+function drawBird(x, y, it) {
+  x = x|0;
+  const by = (y + Math.sin((tick*0.08) + (it.bob||0)) * 2) | 0;  // let bob
+  const s = spr('bird_fly');
+  if (s) { const dw = BIRD_GH*s.fw/s.fh; blitDest(s, animFrame(s), x + it.w/2 - dw/2, by - (BIRD_GH-it.h)/2, dw, BIRD_GH); return; }
+
+  // Procedural ravn (pixel) — lyse, maanebelyste toner + highlight, saa den
+  // laeses tydeligt mod den moerke baggrund.
+  const flap = (tick >> 3) & 1;
+  const body = '#4a4658', edge = '#8e8aa6', dark = '#1c1a26';
+
+  // moerk kant under (laeser mod lys himmel)
+  ctx.fillStyle = dark;
+  ctx.fillRect(x+5, by+3, 14, 7);
+  // krop + hoved
+  ctx.fillStyle = body;
+  ctx.fillRect(x+6, by+2, 12, 6);
+  ctx.fillRect(x+15, by+1, 6, 5);            // hoved
+  // hale
+  ctx.fillRect(x+1, by+3, 6, 3);
+  // maanebelyst highlight paa ryg/hoved
+  ctx.fillStyle = edge;
+  ctx.fillRect(x+7, by+2, 9, 1);
+  ctx.fillRect(x+15, by+1, 5, 1);
+  // naeb + oeje
+  ctx.fillStyle = '#e8801a'; ctx.fillRect(x+21, by+2, 3, 2);
+  ctx.fillStyle = '#f0d060'; ctx.fillRect(x+18, by+2, 1, 1);
+  // vinger (flapper op/ned) — lys overkant
+  if (flap) {
+    ctx.fillStyle = body; ctx.fillRect(x+8, by-4, 9, 5); ctx.fillRect(x+9, by-6, 5, 3);
+    ctx.fillStyle = edge; ctx.fillRect(x+8, by-4, 9, 1);
+  } else {
+    ctx.fillStyle = body; ctx.fillRect(x+8, by+7, 9, 5); ctx.fillRect(x+9, by+11, 5, 3);
+    ctx.fillStyle = edge; ctx.fillRect(x+8, by+7, 9, 1);
+  }
+}
+
+// ── Highscore ──────────────────────────────────────────
+const sbReady = !SUPABASE_URL.includes('DIT_PROJEKT');
+
+async function fetchScores() {
+  const el = document.getElementById('scoresContainer');
+  if (!sbReady) {
+    el.innerHTML = '<p class="scores-note">Highscore-listen vises naar Supabase er sat op.</p>';
+    return;
+  }
+  try {
+    const r = await fetch(SUPABASE_URL+'/rest/v1/highscores?order=score.desc&limit=10', {
+      headers: { apikey:SUPABASE_KEY, Authorization:'Bearer '+SUPABASE_KEY }
+    });
+    const data = await r.json();
+    if (!Array.isArray(data)||!data.length) {
+      el.innerHTML = '<p class="scores-note">Ingen scores endnu — vaar den foerste!</p>'; return;
+    }
+    const M = ['1.','2.','3.'];
+    let h = '<table class="scores-table"><thead><tr><th>#</th><th>Navn</th><th>Score</th><th>Ringe</th><th>Distance</th></tr></thead><tbody>';
+    data.forEach((row,i) => {
+      h += `<tr><td>${M[i]||(i+1)+'.'}</td><td>${esc(row.name)}</td><td>${row.score}</td><td>${row.rings}</td><td>${row.distance}m</td></tr>`;
+    });
+    el.innerHTML = h + '</tbody></table>';
+  } catch {
+    el.innerHTML = '<p class="scores-note">Kunne ikke hente highscores.</p>';
+  }
+}
+
+async function submitScore() {
+  const name = entryName.trim() || 'ANONYM';
+  if (sbReady) {
+    try {
+      await fetch(SUPABASE_URL+'/rest/v1/highscores', {
+        method:'POST',
+        headers:{ apikey:SUPABASE_KEY, Authorization:'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json', Prefer:'return=minimal' },
+        body: JSON.stringify({ name, score:finalScore, rings:finalRings, distance:finalDist }),
+      });
+      fetchScores();
+    } catch {}
+  }
+  gState = 'start'; resetAll();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Loop ───────────────────────────────────────────────
+canvas.addEventListener('click', handleTap);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); handleTap(); }, { passive:false });
+
+function handleTap() {
+  if (gState === 'start') { resetAll(); gState = 'playing'; }
+  else if (gState === 'dead') { gState = 'entry'; }
+}
+
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', scrollY > 20);
+});
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('navMobile').classList.toggle('open');
+});
+
+// Fast tidsskridt: spillet opdateres altid i faste 1/60-sekunds-steps,
+// uanset skaermens opdateringsfrekvens (60/120/144 Hz). Det giver helt
+// jaevn og ens spilfoelelse overalt og forhindrer at fysik/kollision
+// "springer" paa hurtige skaerme eller hakker paa langsomme.
+const STEP_MS = 1000 / 60;
+let acc = 0, lastTime = 0;
+
+function step() {
+  tick++;                              // kosmetisk taeller loeber altid
+  if (hitStop > 0) { hitStop--; return; }  // kort fryser efter haardt hit (slag-foelelse)
+  update();                            // gameplay (returnerer tidligt naar der ikke spilles)
+}
+
+function loop(now) {
+  requestAnimationFrame(loop);
+  if (!lastTime) lastTime = now;
+  let dt = now - lastTime;
+  lastTime = now;
+  if (dt > 250) dt = 250;          // efter fanen har vaeret inaktiv: undgaa kaempe-spring
+  acc += dt;
+  let steps = 0;
+  while (acc >= STEP_MS && steps < 5) { step(); acc -= STEP_MS; steps++; }
+  draw();
+}
+
+resetAll();
+loadSprites();
+loadBackgroundSheet();
+fetchScores();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
