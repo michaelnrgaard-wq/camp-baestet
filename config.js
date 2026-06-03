@@ -128,8 +128,8 @@ const CONFIG = {
     platformY3:      82,    // N3 overfladeY (ikke nåbar direkte fra jord)
     n3MinW:          55,    // N3 platform-bredde
     n3MaxW:          95,
-    n3OffsetMin:     30,    // N3 starter X px inde på N2 (land på N2 først)
-    n3OffsetMax:     90,
+    n3OffsetMin:     70,    // N3 starter ved højre halvdel af N2 (eller lidt forbi)
+    n3OffsetMax:     160,
 
     //  Øl-chance falder med distancen:
     n3BeerStart:     0.35,  // startchance  (after første garanterede øl)
