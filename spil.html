@@ -94,17 +94,35 @@
     /* Fjern de gamle knapper under canvasset — vises ikke laengere */
     .touch-controls { display: none !important; }
 
-    /* ── Mobil (alle retninger) ── */
+    /* ── Mobil: skjul alt undtagen spillet ── */
     @media (max-width: 768px) {
       nav { height: 48px; padding: 0 1rem; }
       .nav-logo { font-size: 1.1rem; }
       .nav-mobile { top: 48px; }
-      .game-wrapper { margin-top: 48px; padding: 0; }
       .game-title, .game-subtitle, .controls-hint,
       .scores-section { display: none !important; }
-      .canvas-wrap { border: none; box-shadow: none; }
       .touch-overlay { display: block; }
-      body { overflow: hidden; touch-action: none; }
+      body { overflow: hidden; touch-action: none; background: #0a0805; }
+    }
+
+    /* ── Portræt-mobil: fuldt skaerm via rotation ──
+       Canvasset er 480×270 (landscape). Vi roterer det 90° og skalerer
+       saa 270px (original hoejde) = 100vw. Spillet fylder hele skaermen.
+    ── */
+    @media (max-width: 768px) and (orientation: portrait) {
+      .game-wrapper {
+        position: fixed; inset: 0; margin: 0; padding: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #0a0805;
+      }
+      .canvas-wrap {
+        /* Explicit size — JS sætter transform */
+        width: 480px; height: 270px;
+        flex-shrink: 0;
+        border: none !important; box-shadow: none !important;
+        transform-origin: center center;
+      }
+      #gameCanvas { width: 480px !important; height: 270px !important; }
     }
 
     .controls-hint { display:flex; gap:2rem; flex-wrap:wrap; justify-content:center; margin-top:1.2rem; }
@@ -1862,6 +1880,42 @@ function handleTap() {
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', scrollY > 20);
 });
+
+// ── Portræt-rotation ─────────────────────────────────────
+// Canvasset er 480×270 (landscape). I portræt roteres det 90° og skaleres
+// saa 270px (canvas-hoejde) = skærmens bredde. Spillet fylder dermed
+// skaermen fuldstændig uden at ændre selve spilkoden.
+function applyPortraitLayout() {
+  const portrait = window.innerWidth < window.innerHeight && window.innerWidth <= 768;
+  const wrap    = document.querySelector('.canvas-wrap');
+  const gameDiv = document.querySelector('.game-wrapper');
+  const navEl   = document.getElementById('nav');
+  if (!wrap || !gameDiv) return;
+
+  if (portrait) {
+    const scale = window.innerWidth / 270;
+
+    // Fjern nav og giv game-wrapper hele skaermen
+    if (navEl) navEl.style.display = 'none';
+    gameDiv.style.cssText = 'position:fixed;inset:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;background:#0a0805;';
+
+    // Roter canvasset og skaler saa 270px = skaermbredde
+    wrap.style.width  = '480px';
+    wrap.style.height = '270px';
+    wrap.style.transform = `rotate(-90deg) scale(${scale})`;
+    wrap.style.transformOrigin = 'center center';
+    wrap.style.flexShrink = '0';
+    wrap.style.border = 'none';
+    wrap.style.boxShadow = 'none';
+  } else {
+    if (navEl) navEl.style.display = '';
+    gameDiv.style.cssText = '';
+    wrap.style.cssText = '';
+  }
+}
+applyPortraitLayout();
+window.addEventListener('resize', applyPortraitLayout);
+window.addEventListener('orientationchange', () => setTimeout(applyPortraitLayout, 120));
 document.getElementById('hamburger').addEventListener('click', () => {
   document.getElementById('navMobile').classList.toggle('open');
 });
