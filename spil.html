@@ -487,6 +487,27 @@ function blitDest(rec, fi, dx, dy, dw, dh) {
 //  saa vi beholder den parallax-rullende himmel men faar flot silhuet-grafik.
 const BG = {};
 let bgReady = false;
+let orangeSceneReady = false;
+
+// Loader til "Orange scene.png" — skaleres saa billedets bund passer til GROUND_Y
+function loadOrangeScene() {
+  const img = new Image();
+  img.onload = () => {
+    // Skalér saa scenen fylder ca. 75% af skærmhøjden og sidder i midten
+    const targetH = Math.round(VH * 0.82);
+    const scale   = targetH / img.height;
+    const w       = Math.round(img.width * scale);
+    const cv      = document.createElement('canvas');
+    cv.width  = w; cv.height = targetH;
+    const c   = cv.getContext('2d'); c.imageSmoothingEnabled = true;
+    c.drawImage(img, 0, 0, w, targetH);
+    BG.orangeScene = { cv, w, h: targetH };
+    orangeSceneReady = true;
+  };
+  img.onerror = () => { orangeSceneReady = false; };
+  img.src = './assets/sprites/Orange%20scene.png';
+}
+
 function loadBackgroundSheet() {
   const img = new Image();
   img.onload = () => {
@@ -1114,6 +1135,15 @@ function drawTree(x, y) {
 //  mobil-portræt (270×480).
 // ════════════════════════════════════════════════════════
 function drawFestivalScene() {
+  if (orangeSceneReady && BG.orangeScene) {
+    // Brug det rigtige billede som baggrund (med langsom parallax)
+    bgTile(BG.orangeScene, 0.08, GROUND_Y);
+    // Tilføj crowd og flag ovenpaa for dybde
+    drawCrowd();
+    drawFestivalFlags();
+    return;
+  }
+  // Fallback: procedural tegning
   drawHorizonGlow();
   drawDistantScaffolding();
   drawSpotlights();
@@ -2287,6 +2317,7 @@ function loop(now) {
 resetAll();
 loadSprites();
 loadBackgroundSheet();
+loadOrangeScene();
 fetchScores();
 requestAnimationFrame(loop);
 </script>
