@@ -29,7 +29,7 @@
       --blackletter: 'Cloister Black', serif;
     }
 
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 
     body {
       background: var(--dark);
@@ -55,6 +55,26 @@
       background: rgba(5,3,2,0.97);
       border-bottom: 1px solid rgba(201,168,76,0.2);
       backdrop-filter: blur(12px);
+      transition: border-bottom-color 0.3s, box-shadow 0.3s;
+    }
+
+    nav.scrolled {
+      border-bottom-color: rgba(201,168,76,0.45);
+      box-shadow: 0 4px 40px rgba(0,0,0,0.7);
+    }
+
+    /* ── Scroll progress ── */
+    #progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      width: 100%;
+      transform: scaleX(0);
+      transform-origin: left;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      box-shadow: 0 0 12px rgba(201,168,76,0.6);
+      z-index: 101;
+      pointer-events: none;
     }
 
     .nav-logo {
@@ -249,6 +269,17 @@
       margin: 0 auto;
       line-height: 1.7;
     }
+
+    /* ── Side-entrance (header toner ind når gardinet løfter) ── */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes draw-line { to { transform: scaleX(1); } }
+    .page-header .label   { opacity: 0; animation: rise 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.30s forwards; }
+    .page-header h1       { opacity: 0; animation: rise 0.9s cubic-bezier(0.2,0.8,0.2,1) 0.40s forwards; }
+    .page-header .divider { transform: scaleX(0); animation: draw-line 1s cubic-bezier(0.2,0.8,0.2,1) 0.60s forwards; }
+    .page-header p        { opacity: 0; animation: rise 0.9s ease 0.65s forwards; }
 
     /* ── Portrait grid ── */
     .portraits-section {
@@ -518,6 +549,8 @@
       }
       .grain, .curtain, .embers, .ambient { display: none; }
       .portrait-img img { opacity: 1; filter: none; }
+      .page-header .label, .page-header h1, .page-header p { opacity: 1; animation: none; }
+      .page-header .divider { transform: none; animation: none; }
     }
 
     @media (max-width: 600px) {
@@ -585,6 +618,7 @@
     }
     .cookie-btn:hover { background: var(--gold2); transform: translateY(-1px); }
   </style>
+</head>
 <body>
 
   <!-- Cookie-banner -->
@@ -592,6 +626,9 @@
     <p>Denne hjemmeside bruger ikke cookies. Jeg ved ikke engang, hvad cookies er 👉👈</p>
     <button class="cookie-btn" id="cookieAccept">Accepter</button>
   </div>
+
+  <!-- Scroll progress -->
+  <div id="progress"></div>
 
   <!-- Pulserende ild-glød + site-wide embers (bag alt) -->
   <div class="ambient"></div>
@@ -607,7 +644,7 @@
   <!-- Sideovergang -->
   <div class="curtain" id="curtain"></div>
 
-  <nav>
+  <nav id="nav">
     <a href="index.html" class="nav-logo shimmer">Camp Bæstet</a>
     <div class="nav-right">
       <ul class="nav-links">
@@ -939,6 +976,35 @@
         setTimeout(() => { window.location.href = a.href; }, 560);
       });
     }
+
+    // ── Nav-skygge + scroll-progress ──
+    const navEl = document.getElementById('nav');
+    const progress = document.getElementById('progress');
+    function onScroll() {
+      const y = window.scrollY;
+      navEl.classList.toggle('scrolled', y > 60);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // ── Prefetch interne sider ved hover/touch (øjeblikkelig navigation) ──
+    (function() {
+      const seen = new Set();
+      function prefetch(a) {
+        if (!isInternal(a)) return;
+        const href = (a.getAttribute('href') || '').split('#')[0];
+        if (!href || seen.has(href)) return;
+        seen.add(href);
+        const l = document.createElement('link');
+        l.rel = 'prefetch';
+        l.href = href;
+        document.head.appendChild(l);
+      }
+      document.addEventListener('mouseover', e => { const a = e.target.closest('a'); if (a) prefetch(a); });
+      document.addEventListener('touchstart', e => { const a = e.target.closest('a'); if (a) prefetch(a); }, { passive: true });
+    })();
   </script>
 </body>
 </html>

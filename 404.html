@@ -86,6 +86,39 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(201,168,76,0.35);
     }
+
+    /* ── Ild-glød + entrance (matcher resten af sitet) ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(120% 60% at 50% 118%, rgba(200,96,26,0.16), transparent 60%),
+        radial-gradient(100% 50% at 50% -10%, rgba(201,168,76,0.06), transparent 55%);
+      animation: ambient-pulse 7s ease-in-out infinite;
+    }
+    @keyframes ambient-pulse { 0%,100% { opacity: 0.65; } 50% { opacity: 1; } }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes draw-line { to { transform: scaleX(1); } }
+    @keyframes rise-glyph {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 0.3; transform: translateY(0); }
+    }
+    .glyph   { opacity: 0; animation: rise-glyph 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.10s forwards; }
+    h1       { opacity: 0; animation: rise 0.9s cubic-bezier(0.2,0.8,0.2,1) 0.20s forwards; }
+    .divider { transform: scaleX(0); animation: draw-line 1s cubic-bezier(0.2,0.8,0.2,1) 0.40s forwards; }
+    .sub, p  { opacity: 0; animation: rise 0.9s ease 0.45s forwards; }
+    a.btn    { opacity: 0; animation: rise 0.9s ease 0.60s forwards; }
+
+    @media (prefers-reduced-motion: reduce) {
+      body::before { animation: none; }
+      .glyph { opacity: 0.3; animation: none; }
+      h1, .sub, p, a.btn { opacity: 1; animation: none; }
+      .divider { transform: none; animation: none; }
+    }
   </style>
 </head>
 <body>
